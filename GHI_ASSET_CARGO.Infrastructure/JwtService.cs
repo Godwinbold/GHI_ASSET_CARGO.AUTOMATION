@@ -25,7 +25,7 @@ namespace GHI_ASSET_CARGO.Infrastructure
         {
             var tokenHandler = new JwtSecurityTokenHandler();
 
-            var key = Encoding.UTF8.GetBytes(_config.GetSection("JWT:Key").Value);
+            var key = Encoding.UTF8.GetBytes(_config.GetSection("JWT:Key").Value!);
 
             var claimList = new List<Claim>
         {
