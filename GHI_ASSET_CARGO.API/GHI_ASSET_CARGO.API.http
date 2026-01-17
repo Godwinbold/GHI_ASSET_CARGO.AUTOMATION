@@ -1,0 +1,6 @@
+@GHI_ASSET_CARGO.API_HostAddress = http://localhost:5229
+
+GET {{GHI_ASSET_CARGO.API_HostAddress}}/weatherforecast/
+Accept: application/json
+
+###

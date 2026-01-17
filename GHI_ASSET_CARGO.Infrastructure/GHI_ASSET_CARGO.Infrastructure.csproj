@@ -1,0 +1,18 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net8.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="System.IdentityModel.Tokens.Jwt" Version="8.15.0" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\GHI_ASSET_CARGO.Core\GHI_ASSET_CARGO.Core.csproj" />
+    <ProjectReference Include="..\GHI_ASSET_CARGO.Data\GHI_ASSET_CARGO.Data.csproj" />
+  </ItemGroup>
+
+</Project>
