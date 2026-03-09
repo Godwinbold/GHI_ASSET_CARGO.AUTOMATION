@@ -1,18 +1,20 @@
-﻿using Microsoft.AspNetCore.Identity;
+using GHI_ASSET_CARGO.Data;
+using GHI_ASSET_CARGO.Domain.Entities;
+using Microsoft.AspNetCore.Identity;
+using Microsoft.EntityFrameworkCore;
 
 namespace GHI_ASSET_CARGO.API.Extensions
 {
-    //public static void AddDbServices(this IServiceCollection services, IConfiguration configuration)
-    //{
-    //    services.AddDbContext<AppDbContext>(options =>
-    //        options.UseNpgsql(configuration.GetConnectionString("DefaultConnection"),
-    //            optionsBuilder =>
-    //            {
-    //                optionsBuilder.MigrationsAssembly(typeof(AppDbContext).Assembly.GetName().Name);
-    //                // optionsBuilder.UseNetTopologySuite();
-    //            }));
+    public static class DbRegistration
+    {
+        public static void AddDbServices(this IServiceCollection services, IConfiguration configuration)
+        {
+            services.AddDbContext<AppDbContext>(options =>
+                options.UseSqlServer(configuration.GetConnectionString("DefaultConnection")));
 
-    //    services.AddIdentity<User, IdentityRole>()
-    //        .AddEntityFrameworkStores<AppDbContext>().AddDefaultTokenProviders();
-    //}
+            services.AddIdentity<AppUser, IdentityRole<Guid>>()
+                .AddEntityFrameworkStores<AppDbContext>()
+                .AddDefaultTokenProviders();
+        }
+    }
 }

@@ -9,7 +9,7 @@ namespace GHI_ASSET_CARGO.Core.Abstractions
 
         public IQueryable<TEntity> GetAll<TEntity>() where TEntity : BaseEntity;
 
-        public Task<TEntity?> FindById<TEntity>(string id) where TEntity : BaseEntity;
+        public Task<TEntity?> FindById<TEntity>(Guid id) where TEntity : BaseEntity;
 
         public void Update<TEntity>(TEntity entity) where TEntity : BaseEntity;
 

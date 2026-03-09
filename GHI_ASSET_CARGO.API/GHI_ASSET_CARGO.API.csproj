@@ -7,11 +7,24 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <PackageReference Include="Microsoft.AspNetCore.Authentication.JwtBearer" Version="8.0.11" />
+    <PackageReference Include="Microsoft.EntityFrameworkCore.Design" Version="8.0.24">
+      <PrivateAssets>all</PrivateAssets>
+      <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
+    </PackageReference>
+    <PackageReference Include="Microsoft.EntityFrameworkCore.SqlServer" Version="8.0.24" />
     <PackageReference Include="Swashbuckle.AspNetCore" Version="6.6.2" />
   </ItemGroup>
 
   <ItemGroup>
+    <ProjectReference Include="..\GHI_ASSET_CARGO.APPLICATION\GHI_ASSET_CARGO.Domain.csproj" />
+    <ProjectReference Include="..\GHI_ASSET_CARGO.Core\GHI_ASSET_CARGO.Core.csproj" />
+    <ProjectReference Include="..\GHI_ASSET_CARGO.Data\GHI_ASSET_CARGO.Data.csproj" />
     <ProjectReference Include="..\GHI_ASSET_CARGO.Infrastructure\GHI_ASSET_CARGO.Infrastructure.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Folder Include="Controllers\" />
   </ItemGroup>
 
 </Project>

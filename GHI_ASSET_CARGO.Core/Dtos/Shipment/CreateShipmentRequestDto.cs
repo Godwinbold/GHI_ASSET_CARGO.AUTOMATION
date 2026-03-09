@@ -1,10 +1,9 @@
 using GHI_ASSET_CARGO.Domain.Enums;
 
-namespace GHI_ASSET_CARGO.Domain.Entities
+namespace GHI_ASSET_CARGO.Core.Dtos.Shipment
 {
-    public class Shipment : BaseEntity
+    public class CreateShipmentRequestDto
     {
-        public Guid AirlineId { get; set; } = default!;
         public string AirwayBillNumber { get; set; } = default!;
         public ShipmentStatus Status { get; set; }
         public DateTimeOffset ShipmentDate { get; set; }

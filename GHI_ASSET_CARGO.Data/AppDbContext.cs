@@ -1,8 +1,7 @@
-﻿using GHI_ASSET_CARGO.Domain.Entities;
+using GHI_ASSET_CARGO.Domain.Entities;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Identity.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore;
-
 
 namespace GHI_ASSET_CARGO.Data
 {
@@ -12,9 +11,14 @@ namespace GHI_ASSET_CARGO.Data
         {
         }
 
+        public DbSet<Airline> Airlines { get; set; }
+        public DbSet<Shipment> Shipments { get; set; }
+        public DbSet<ShipmentNote> ShipmentNotes { get; set; }
+        public DbSet<Financial> Financials { get; set; }
+
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
-            base.OnModelCreating(modelBuilder);    
+            base.OnModelCreating(modelBuilder);
         }
     }
 }

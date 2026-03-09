@@ -1,4 +1,4 @@
-﻿using GHI_ASSET_CARGO.Core.Abstractions;
+using GHI_ASSET_CARGO.Core.Abstractions;
 using GHI_ASSET_CARGO.Domain.Entities;
 using Microsoft.Extensions.Configuration;
 using Microsoft.IdentityModel.Tokens;
@@ -28,12 +28,13 @@ namespace GHI_ASSET_CARGO.Infrastructure
             var key = Encoding.UTF8.GetBytes(_config.GetSection("JWT:Key").Value!);
 
             var claimList = new List<Claim>
-        {
-            new(ClaimTypes.NameIdentifier, user.Id),
-            new(JwtRegisteredClaimNames.Sub, user.Id),
-            new(JwtRegisteredClaimNames.Name, $"{user.FirstName} {user.LastName}"),
-            new(JwtRegisteredClaimNames.Email, user.Email!),
-        };
+            {
+                new(ClaimTypes.NameIdentifier, user.Id.ToString()),
+                new(JwtRegisteredClaimNames.Sub, user.Id.ToString()),
+                new(JwtRegisteredClaimNames.Name, $"{user.FirstName} {user.LastName}"),
+                new(JwtRegisteredClaimNames.Email, user.Email!),
+                new Claim("AirlineId", user.AirlineId.ToString())
+            };
             claimList.AddRange(roles.Select(role => new Claim(ClaimTypes.Role, role)));
 
 
