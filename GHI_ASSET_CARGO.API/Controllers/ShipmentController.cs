@@ -38,8 +38,9 @@ namespace GHI_ASSET_CARGO.API.Controllers
             return null;
         }
 
+
         /// <summary>List shipments for the airline in the route (user must have access to that airline).</summary>
-        [HttpGet]
+        [HttpGet("get-shipments")]
         public async Task<IActionResult> GetShipments(string airlineId, [FromQuery] int page = 1, [FromQuery] int pageSize = 10, [FromQuery] string? awbSearch = null)
         {
             var forbidden = EnsureUserCanAccessAirline(airlineId);
@@ -53,7 +54,7 @@ namespace GHI_ASSET_CARGO.API.Controllers
         }
 
         /// <summary>Search by AWB number within the airline in the route.</summary>
-        [HttpGet("search")]
+        [HttpGet("search-by-awb")]
         public async Task<IActionResult> SearchByAwb(string airlineId, [FromQuery] string awbNumber)
         {
             var forbidden = EnsureUserCanAccessAirline(airlineId);
@@ -70,7 +71,7 @@ namespace GHI_ASSET_CARGO.API.Controllers
         }
 
         /// <summary>Get a single shipment by id (must belong to the airline in the route).</summary>
-        [HttpGet("{id}")]
+        [HttpGet("{id}/get-shipment-by-id")]
         public async Task<IActionResult> GetById(string airlineId, string id)
         {
             var forbidden = EnsureUserCanAccessAirline(airlineId);
@@ -84,7 +85,7 @@ namespace GHI_ASSET_CARGO.API.Controllers
         }
 
         /// <summary>Create a new shipment for the airline in the route.</summary>
-        [HttpPost]
+        [HttpPost("create-shipment")]
         public async Task<IActionResult> Create(string airlineId, [FromBody] CreateShipmentRequestDto dto)
         {
             var forbidden = EnsureUserCanAccessAirline(airlineId);
@@ -98,7 +99,7 @@ namespace GHI_ASSET_CARGO.API.Controllers
         }
 
         /// <summary>Add a note to a shipment.</summary>
-        [HttpPost("{id}/notes")]
+        [HttpPost("{id}/add-notes")]
         public async Task<IActionResult> AddNote(string airlineId, string id, [FromBody] AddNoteRequestDto dto)
         {
             var forbidden = EnsureUserCanAccessAirline(airlineId);

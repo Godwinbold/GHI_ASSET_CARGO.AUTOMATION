@@ -17,12 +17,12 @@ namespace GHI_ASSET_CARGO.API.Extensions
             {
                 options.AddSecurityDefinition("Bearer", new OpenApiSecurityScheme
                 {
-                    Description = "JWT Authorization header using the Bearer scheme.",
+                    Description = "Enter: Bearer {your JWT token}",
                     Name = "Authorization",
                     Type = SecuritySchemeType.ApiKey,
                     BearerFormat = "JWT",
                     In = ParameterLocation.Header,
-                    Scheme = "Bearer"
+                    Scheme = "bearer"
                 });
                 options.AddSecurityRequirement(new OpenApiSecurityRequirement
                 {
@@ -40,23 +40,67 @@ namespace GHI_ASSET_CARGO.API.Extensions
                 });
             });
 
-            services.AddAuthentication(options =>
-            {
-                options.DefaultAuthenticateScheme = JwtBearerDefaults.AuthenticationScheme;
-                options.DefaultScheme = JwtBearerDefaults.AuthenticationScheme;
-                options.DefaultChallengeScheme = JwtBearerDefaults.AuthenticationScheme;
-            }).AddJwtBearer(options =>
-            {
-                var key = Encoding.UTF8.GetBytes(configuration.GetSection("JWT:Key").Value!);
-                options.TokenValidationParameters = new TokenValidationParameters
-                {
-                    ValidateIssuerSigningKey = false,
-                    IssuerSigningKey = new SymmetricSecurityKey(key),
-                    ValidateLifetime = false,
-                    ValidateAudience = false,
-                    ValidateIssuer = false
-                };
-            });
+
+            //services.AddAuthentication(options =>
+            //{
+            //    options.DefaultAuthenticateScheme = JwtBearerDefaults.AuthenticationScheme;
+            //    options.DefaultScheme = JwtBearerDefaults.AuthenticationScheme;
+            //    options.DefaultChallengeScheme = JwtBearerDefaults.AuthenticationScheme;
+            //}).AddJwtBearer(options =>
+            //{
+            //    var key = Encoding.UTF8.GetBytes(configuration["JWT:Key"]!);
+
+            //    options.MapInboundClaims = false;
+
+            //    options.TokenValidationParameters = new TokenValidationParameters
+            //    {
+            //        ValidateIssuerSigningKey = true,
+            //        IssuerSigningKey = new SymmetricSecurityKey(key),
+            //        ValidateLifetime = true,
+            //        ValidateAudience = false,
+            //        ValidateIssuer = false,
+            //        ClockSkew = TimeSpan.Zero
+            //    };
+            //});
+
+            //services.AddAuthentication(options =>
+            //{
+            //    options.DefaultAuthenticateScheme = JwtBearerDefaults.AuthenticationScheme;
+            //    options.DefaultChallengeScheme = JwtBearerDefaults.AuthenticationScheme;
+            //})
+            //.AddJwtBearer(options =>
+            //{
+            //    var key = Encoding.UTF8.GetBytes(configuration["JWT:Key"]!);
+
+            //    options.Events = new JwtBearerEvents
+            //    {
+            //        OnAuthenticationFailed = context =>
+            //        {
+            //            Console.WriteLine("AUTH FAILED: " + context.Exception.Message);
+            //            return Task.CompletedTask;
+            //        },
+            //        OnTokenValidated = context =>
+            //        {
+            //            Console.WriteLine("TOKEN VALIDATED");
+            //            return Task.CompletedTask;
+            //        },
+            //        OnChallenge = context =>
+            //        {
+            //            Console.WriteLine("AUTH CHALLENGE");
+            //            return Task.CompletedTask;
+            //        }
+            //    };
+
+            //    options.TokenValidationParameters = new TokenValidationParameters
+            //    {
+            //        ValidateIssuerSigningKey = true,
+            //        IssuerSigningKey = new SymmetricSecurityKey(key),
+            //        ValidateIssuer = false,
+            //        ValidateAudience = false,
+            //        ValidateLifetime = true,
+            //        ClockSkew = TimeSpan.Zero
+            //    };
+            //});
 
             services.AddCors(options =>
             {

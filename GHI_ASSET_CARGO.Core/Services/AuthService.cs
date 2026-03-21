@@ -5,6 +5,7 @@ using GHI_ASSET_CARGO.Domain.Constants;
 using GHI_ASSET_CARGO.Domain.Entities;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.Extensions.Configuration;
+using Microsoft.Extensions.Logging;
 using System;
 using System.Collections.Generic;
 using System.Security.Claims;
@@ -22,152 +23,195 @@ namespace GHI_ASSET_CARGO.Core.Services
         private readonly IConfiguration _configuration;
         private readonly IUnitOfWork _unitOfWork;
         private readonly IEmailService _emailService;
+        private readonly ILogger<AuthService> _logger;
 
         public AuthService(UserManager<AppUser> userManager, IRepository repository, IJwtService jwtService,
-            IConfiguration configuration, IUnitOfWork unitOfWork)
+            IConfiguration configuration, IUnitOfWork unitOfWork, ILogger<AuthService> logger)
         {
             _userManager = userManager;
             _repository = repository;
             _jwtService = jwtService;
             _configuration = configuration;
             _unitOfWork = unitOfWork;
+            _logger = logger;
         }
 
         public async Task<Result<string>> RegisterUser(RegisterRequestDto registerUserDto, string airlineId)
         {
-            var airline = await _repository.FindById<Airline>(Guid.Parse(airlineId));
-            if (airline == null)
-                return new Error[] { new("Airline.NotFound", "Airline not found. You can only register for a valid airline portal.") };
-
-            var user = new AppUser
+            try
             {
-                FirstName = registerUserDto.FirstName,
-                LastName = registerUserDto.LastName,
-                MiddleName = registerUserDto.MiddleName,
-                Email = registerUserDto.Email,
-                PhoneNumber = registerUserDto.PhoneNumber,
-                UserName = registerUserDto.Email,
-                CreatedDate = DateTimeOffset.UtcNow,
-                UpdatedDate = DateTimeOffset.UtcNow,
-                IdNumber = registerUserDto.IdNumber,
-                AirlineId = airlineId
-            };
+                var airline = await _repository.FindById<Airline>(Guid.Parse(airlineId));
+                if (airline == null)
+                    return new Error[] { new("Airline.NotFound", "Airline not found. You can only register for a valid airline portal.") };
+
+                var user = new AppUser
+                {
+                    FirstName = registerUserDto.FirstName,
+                    LastName = registerUserDto.LastName,
+                    MiddleName = registerUserDto.MiddleName,
+                    Email = registerUserDto.Email,
+                    PhoneNumber = registerUserDto.PhoneNumber,
+                    UserName = registerUserDto.Email,
+                    CreatedDate = DateTimeOffset.UtcNow,
+                    UpdatedDate = DateTimeOffset.UtcNow,
+                    IdNumber = registerUserDto.IdNumber,
+                    AirlineId = airlineId
+                };
 
 
-            var result = await _userManager.CreateAsync(user, registerUserDto.Password);
+                var result = await _userManager.CreateAsync(user, registerUserDto.Password);
 
-            if (!result.Succeeded)
-                return result.Errors.Select(error => new Error(error.Code, error.Description)).ToArray();
+                if (!result.Succeeded)
+                    return result.Errors.Select(error => new Error(error.Code, error.Description)).ToArray();
 
-            result = await _userManager.AddToRoleAsync(user, RolesConstant.User);
-            if (!result.Succeeded)
-                return result.Errors.Select(error => new Error(error.Code, error.Description)).ToArray();
+                result = await _userManager.AddToRoleAsync(user, RolesConstant.User);
+                if (!result.Succeeded)
+                    return result.Errors.Select(error => new Error(error.Code, error.Description)).ToArray();
 
-            return Result<string>.Success("User registered successfully");
+                return Result<string>.Success("User registered successfully");
+            }
+            catch(Exception ex)
+            {
+                _logger.LogError($"Failed to create executive, {ex.Message}");
+                return new Error[] { new("Error", "Failed to create user") };
+            }
         }
-
+            
         
+
+
 
         public async Task<Result> RegisterAdmin(AdminRegisterDTO registerAdminDto)
         {
-            var emailExist = await _userManager.FindByEmailAsync(registerAdminDto.Email);
-
-            if (emailExist != null)
-                return new Error[] { new("Registration.Error", "email already exist") };
-
-            var user = new AppUser
+            try
             {
-                FirstName = registerAdminDto.FirstName,
-                MiddleName = registerAdminDto.MiddleName,
-                LastName = registerAdminDto.LastName,
-                Email = registerAdminDto.Email,
-                PhoneNumber = registerAdminDto.PhoneNumber,
-                UserName = registerAdminDto.Email,
-                CreatedDate = DateTimeOffset.UtcNow,
-                UpdatedDate = DateTimeOffset.UtcNow,
-                AirlineId = registerAdminDto.AirlineId,
-                IdNumber = registerAdminDto.IdNumber,
-               
-            };
+                var emailExist = await _userManager.FindByEmailAsync(registerAdminDto.Email);
 
-            var result = await _userManager.CreateAsync(user, registerAdminDto.Password);
-            if (!result.Succeeded)
-                return (result.Errors.Select(error => new Error(error.Code, error.Description)).ToArray());
+                if (emailExist != null)
+                    return new Error[] { new("Registration.Error", "email already exist") };
 
-            result = await _userManager.AddToRoleAsync(user, RolesConstant.Admin);
-            if (!result.Succeeded)
-                return result.Errors.Select(error => new Error(error.Code, error.Description)).ToArray();
-
-            var confirmEmailUrl = _configuration["ConfirmEmailUrl"];
-            var token = await _userManager.GenerateEmailConfirmationTokenAsync(user);
-            var encodedEmail = HttpUtility.UrlEncode(user.Email);
-            var encodedToken = HttpUtility.UrlEncode(token);
-            var confirmationLink = $"{confirmEmailUrl}?email={encodedEmail}&token={encodedToken}";
-            var body =
-                @$"Hi {user.FirstName}, Please click the link <a href='{confirmationLink}'>here</a> to confirm your account's email";
-            var emailResult = await _emailService.SendEmailAsync(user.Email, "Confirm Email", body);
-
-            if (!emailResult)
-                return new Error[]
+                var user = new AppUser
                 {
-                new("Registration.Error",
-                    "Account has been created successfully but error occured while sending verification email")
+                    FirstName = registerAdminDto.FirstName,
+                    MiddleName = registerAdminDto.MiddleName,
+                    LastName = registerAdminDto.LastName,
+                    Email = registerAdminDto.Email,
+                    PhoneNumber = registerAdminDto.PhoneNumber,
+                    UserName = registerAdminDto.Email,
+                    CreatedDate = DateTimeOffset.UtcNow,
+                    UpdatedDate = DateTimeOffset.UtcNow,
+                    AirlineId = registerAdminDto.AirlineId,
+                    IdNumber = registerAdminDto.IdNumber,
+
                 };
 
-            return Result.Success();
+                var result = await _userManager.CreateAsync(user, registerAdminDto.Password);
+                if (!result.Succeeded)
+                    return (result.Errors.Select(error => new Error(error.Code, error.Description)).ToArray());
+
+                result = await _userManager.AddToRoleAsync(user, RolesConstant.Admin);
+                if (!result.Succeeded)
+                    return result.Errors.Select(error => new Error(error.Code, error.Description)).ToArray();
+
+                var confirmEmailUrl = _configuration["ConfirmEmailUrl"];
+                var token = await _userManager.GenerateEmailConfirmationTokenAsync(user);
+                var encodedEmail = HttpUtility.UrlEncode(user.Email);
+                var encodedToken = HttpUtility.UrlEncode(token);
+                var confirmationLink = $"{confirmEmailUrl}?email={encodedEmail}&token={encodedToken}";
+                var body =
+                    @$"Hi {user.FirstName}, Please click the link <a href='{confirmationLink}'>here</a> to confirm your account's email";
+                try
+                {
+                    var emailResult = await _emailService.SendEmailAsync(user.Email, "Confirm Email", body);
+
+                    if (!emailResult)
+                    {
+                        _logger.LogInformation($">>>>>>Sending of Email to {registerAdminDto.Email} failed");
+                    }
+                }
+                catch(Exception ex)
+                {
+                    _logger.LogError($">>>>>>Sending of Email to {registerAdminDto.Email} failed, {ex.Message}");
+                }
+                
+
+                return Result.Success();
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError($"Failed to create executive, {ex.Message}");
+                return new Error[] { new("Error", "Failed to create admin user") };
+            }
+
         }
 
         public async Task<Result> RegisterExecutive(ExecutiveRegisterDTO registerExecutiveDto)
         {
-            var emailExist = await _userManager.FindByEmailAsync(registerExecutiveDto.Email);
-
-            if (emailExist != null)
-                return new Error[] { new("Registration.Error", "email already exist") };
-
-            var user = new AppUser
+            try
             {
-                FirstName = registerExecutiveDto.FirstName,
-                MiddleName = registerExecutiveDto.MiddleName,
-                LastName = registerExecutiveDto.LastName,
-                Email = registerExecutiveDto.Email,
-                PhoneNumber = registerExecutiveDto.PhoneNumber,
-                UserName = registerExecutiveDto.Email,
-                CreatedDate = DateTimeOffset.UtcNow,
-                UpdatedDate = DateTimeOffset.UtcNow,
-                AirlineId = registerExecutiveDto.AirlineId,
-                IdNumber = registerExecutiveDto.IdNumber,
+                var emailExist = await _userManager.FindByEmailAsync(registerExecutiveDto.Email);
 
-            };
+                if (emailExist != null)
+                    return new Error[] { new("Registration.Error", "email already exist") };
 
-            var result = await _userManager.CreateAsync(user, registerExecutiveDto.Password);
-            if (!result.Succeeded)
-                return (result.Errors.Select(error => new Error(error.Code, error.Description)).ToArray());
-
-            result = await _userManager.AddToRoleAsync(user, RolesConstant.Executive);
-            if (!result.Succeeded)
-                return result.Errors.Select(error => new Error(error.Code, error.Description)).ToArray();
-
-            var confirmEmailUrl = _configuration["ConfirmEmailUrl"];
-            var token = await _userManager.GenerateEmailConfirmationTokenAsync(user);
-            var encodedEmail = HttpUtility.UrlEncode(user.Email);
-            var encodedToken = HttpUtility.UrlEncode(token);
-            var confirmationLink = $"{confirmEmailUrl}?email={encodedEmail}&token={encodedToken}";
-            var body =
-                @$"Hi {user.FirstName}, Please click the link <a href='{confirmationLink}'>here</a> to confirm your account's email";
-            var emailResult = await _emailService.SendEmailAsync(user.Email, "Confirm Email", body);
-
-            if (!emailResult)
-                return new Error[]
+                var user = new AppUser
                 {
-                new("Registration.Error",
-                    "Account has been created successfully but error occured while sending verification email")
+                    FirstName = registerExecutiveDto.FirstName,
+                    MiddleName = registerExecutiveDto.MiddleName,
+                    LastName = registerExecutiveDto.LastName,
+                    Email = registerExecutiveDto.Email,
+                    PhoneNumber = registerExecutiveDto.PhoneNumber,
+                    UserName = registerExecutiveDto.Email,
+                    CreatedDate = DateTimeOffset.UtcNow,
+                    UpdatedDate = DateTimeOffset.UtcNow,
+                    AirlineId = registerExecutiveDto.AirlineId,
+                    IdNumber = registerExecutiveDto.IdNumber,
+
                 };
 
-            return Result.Success();
+                var result = await _userManager.CreateAsync(user, registerExecutiveDto.Password);
+                if (!result.Succeeded)
+                    return (result.Errors.Select(error => new Error(error.Code, error.Description)).ToArray());
+
+                result = await _userManager.AddToRoleAsync(user, RolesConstant.Executive);
+                if (!result.Succeeded)
+                    return result.Errors.Select(error => new Error(error.Code, error.Description)).ToArray();
+
+                var confirmEmailUrl = _configuration["ConfirmEmailUrl"];
+                var token = await _userManager.GenerateEmailConfirmationTokenAsync(user);
+                var encodedEmail = HttpUtility.UrlEncode(user.Email);
+                var encodedToken = HttpUtility.UrlEncode(token);
+                var confirmationLink = $"{confirmEmailUrl}?email={encodedEmail}&token={encodedToken}";
+                var body =
+                    @$"Hi {user.FirstName}, Please click the link <a href='{confirmationLink}'>here</a> to confirm your account's email";
+                try
+                {
+                    var emailResult = await _emailService.SendEmailAsync(user.Email, "Confirm Email", body);
+                    if (!emailResult)
+                    {
+                        _logger.LogInformation($">>>>>>Sending of Email to {registerExecutiveDto.Email} failed");
+                    }
+
+                }
+                catch (Exception ex)
+                {
+                    _logger.LogError(ex.Message, ex);
+                }
+
+                return Result.Success();
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex.Message, ex);
+                return new Error[] { new("Error", "Failed to create executive user") };
+            }
+
+
         }
 
-        public async Task<Result<LoginResponseDto>> Login( LoginRequestDto loginUserDto, string airlineId)
+        public async Task<Result<LoginResponseDto>> Login(LoginRequestDto loginUserDto, string airlineId)
         {
+           
             var user = await _userManager.FindByEmailAsync(loginUserDto.Email);
 
             if (user is null)
@@ -201,8 +245,8 @@ namespace GHI_ASSET_CARGO.Core.Services
 
         }
 
-       
-       
+
+
 
         public async Task<Result<LoginResponseDto>> GetCurrentLoggedInUser(string userId)
         {
@@ -210,7 +254,7 @@ namespace GHI_ASSET_CARGO.Core.Services
 
             if (string.IsNullOrWhiteSpace(userId))
                 return new Error[] { new("Auth.Error", "Could not resolve the current user.") };
-           
+
             var user = await _userManager.FindByIdAsync(userId);
             if (user == null)
                 return new Error[] { new("Auth.Error", "User does not exist.") };
@@ -318,6 +362,6 @@ namespace GHI_ASSET_CARGO.Core.Services
 
         }
 
-       
+
     }
 }

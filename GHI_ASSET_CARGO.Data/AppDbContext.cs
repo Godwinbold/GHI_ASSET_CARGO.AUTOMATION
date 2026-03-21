@@ -15,10 +15,12 @@ namespace GHI_ASSET_CARGO.Data
         public DbSet<Shipment> Shipments { get; set; }
         public DbSet<ShipmentNote> ShipmentNotes { get; set; }
         public DbSet<Financial> Financials { get; set; }
+        public DbSet<ShipmentDocument> ShipmentDocuments { get; set; }
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
             base.OnModelCreating(modelBuilder);
+            modelBuilder.ApplyConfigurationsFromAssembly(typeof(AppDbContext).Assembly);
         }
     }
 }

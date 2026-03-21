@@ -4,5 +4,6 @@ namespace GHI_ASSET_CARGO.Domain.Entities
     {
         public Guid ShipmentId { get; set; } = default!;
         public string Content { get; set; } = default!;
+        public Shipment Shipment { get; set; }
     }
 }

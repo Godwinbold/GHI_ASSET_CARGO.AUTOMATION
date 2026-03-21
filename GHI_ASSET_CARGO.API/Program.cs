@@ -1,50 +1,68 @@
 using GHI_ASSET_CARGO.API.Extensions;
 using GHI_ASSET_CARGO.API.Middlewares;
-using GHI_ASSET_CARGO.Core.Abstractions;
-using GHI_ASSET_CARGO.Data;
-using GHI_ASSET_CARGO.Infrastructure;
-using Microsoft.AspNetCore.Identity;
-using Microsoft.EntityFrameworkCore;
+using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.IdentityModel.Tokens;
+using System.Text;
 
 var builder = WebApplication.CreateBuilder(args);
 
-// Add services to the container.
+// Add services
 builder.Services.AddControllers();
 builder.Services.AddEndpointsApiExplorer();
-
-builder.Services.AddServices(builder.Configuration);
+builder.Services.AddServices(builder.Configuration); 
 builder.Services.AddDbServices(builder.Configuration);
+
+var key = Encoding.UTF8.GetBytes(builder.Configuration["JWT:Key"]!);
+
+builder.Services.AddAuthentication(options =>
+{
+    options.DefaultAuthenticateScheme = JwtBearerDefaults.AuthenticationScheme;
+    options.DefaultChallengeScheme = JwtBearerDefaults.AuthenticationScheme;
+})
+.AddJwtBearer(options =>
+{
+    //options.Events = new JwtBearerEvents
+    //{
+    //    OnAuthenticationFailed = context =>
+    //    {
+    //        Console.WriteLine("AUTH FAILED: " + context.Exception?.Message);
+    //        return Task.CompletedTask;
+    //    },
+    //    OnTokenValidated = context =>
+    //    {
+    //        Console.WriteLine("TOKEN VALIDATED");
+    //        return Task.CompletedTask;
+    //    },
+    //    OnChallenge = context =>
+    //    {
+    //        Console.WriteLine("AUTH CHALLENGE");
+    //        return Task.CompletedTask;
+    //    }
+    //};
+
+    options.TokenValidationParameters = new TokenValidationParameters
+    {
+        ValidateIssuerSigningKey = true,
+        IssuerSigningKey = new SymmetricSecurityKey(key),
+        ValidateIssuer = false,
+        ValidateAudience = false,
+        ValidateLifetime = true,
+        ClockSkew = TimeSpan.Zero
+    };
+});
 
 var app = builder.Build();
 
-using (var scope = app.Services.CreateScope())
-{
-    var services = scope.ServiceProvider;
-
-    var context = services.GetRequiredService<AppDbContext>();
-    var unitOfWork = services.GetRequiredService<IUnitOfWork>();
-    var roleManager = services.GetRequiredService<RoleManager<IdentityRole<Guid>>>();
-
-    await context.Database.MigrateAsync();
-
-    await DataSeeder.SeedAsync(context, unitOfWork, roleManager);
-}
-
-// Configure the HTTP request pipeline.
-if (app.Environment.IsDevelopment())
-{
-    app.UseSwagger();
-    app.UseSwaggerUI();
-}
+app.UseSwagger();
+app.UseSwaggerUI();
 
 app.UseHttpsRedirection();
-
 app.UseCors("AllowAllOrigins");
 
 app.UseAuthentication();
-app.UseMiddleware<ExceptionMiddleware>();
 app.UseAuthorization();
 
+app.UseMiddleware<ExceptionMiddleware>();
 app.MapControllers();
 
 app.Run();

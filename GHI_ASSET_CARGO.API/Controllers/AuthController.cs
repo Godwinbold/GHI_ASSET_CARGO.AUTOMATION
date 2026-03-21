@@ -5,6 +5,7 @@ using GHI_ASSET_CARGO.Core.Dtos;
 using GHI_ASSET_CARGO.Core.Dtos.Auth;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
 
 namespace GHI_ASSET_CARGO.API.Controllers
@@ -19,6 +20,8 @@ namespace GHI_ASSET_CARGO.API.Controllers
         {
             _authService = authService;
         }
+
+       
 
         /// <summary>Register a user. When called from an airline portal, use the route with airlineId so the user is tied to that airline.</summary>
         [HttpPost("airlines/{airlineId}/register-user")]
