@@ -1,4 +1,5 @@
-﻿using GHI_ASSET_CARGO.API.Dtos;
+using GHI_ASSET_CARGO.API.Dtos;
+using GHI_ASSET_CARGO.Core.Dtos;
 using System.Net;
 using System.Text.Json;
 

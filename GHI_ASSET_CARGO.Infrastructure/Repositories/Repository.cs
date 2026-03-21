@@ -28,7 +28,7 @@ namespace GHI_ASSET_CARGO.Infrastructure.Repositories
             return _context.Set<TEntity>();
         }
 
-        public async Task<TEntity?> FindById<TEntity>(string id) where TEntity : BaseEntity
+        public async Task<TEntity?> FindById<TEntity>(Guid id) where TEntity : BaseEntity
         {
             return await _context.Set<TEntity>().FindAsync(id) ?? null;
         }

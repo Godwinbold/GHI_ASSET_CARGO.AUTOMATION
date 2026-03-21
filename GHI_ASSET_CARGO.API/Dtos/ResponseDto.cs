@@ -1,4 +1,5 @@
-﻿using System.Net;
+﻿using GHI_ASSET_CARGO.Core.Dtos;
+using System.Net;
 
 namespace GHI_ASSET_CARGO.API.Dtos
 {
