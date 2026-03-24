@@ -2,6 +2,7 @@ using GHI_ASSET_CARGO.Core.Abstractions;
 using GHI_ASSET_CARGO.Core.Dtos;
 using GHI_ASSET_CARGO.Core.Dtos.Shipment;
 using GHI_ASSET_CARGO.Domain.Entities;
+using GHI_ASSET_CARGO.Domain.Enums;
 using Microsoft.EntityFrameworkCore;
 
 namespace GHI_ASSET_CARGO.Core.Services
@@ -23,6 +24,40 @@ namespace GHI_ASSET_CARGO.Core.Services
 
             if (!string.IsNullOrWhiteSpace(awbSearch))
                 query = query.Where(s => s.AirwayBillNumber.Contains(awbSearch));
+
+            var totalCount = await query.CountAsync();
+
+            var shipments = await query
+                .OrderByDescending(s => s.ShipmentDate)
+                .Skip((page - 1) * pageSize)
+                .Take(pageSize)
+                .ToListAsync();
+
+            var items = new List<ShipmentResponseDto>();
+            foreach (var s in shipments)
+            {
+                var notes = await _repository.GetAll<ShipmentNote>()
+                    .Where(n => n.ShipmentId == s.Id)
+                    .OrderByDescending(n => n.CreatedDate)
+                    .ToListAsync();
+                items.Add(MapToResponse(s, notes));
+            }
+
+            var paged = new PagedResultDto<ShipmentResponseDto>
+            {
+                Items = items,
+                TotalCount = totalCount,
+                Page = page,
+                PageSize = pageSize
+            };
+
+            return Result<PagedResultDto<ShipmentResponseDto>>.Success(paged);
+        }
+
+        public async Task<Result<PagedResultDto<ShipmentResponseDto>>> GetShipmentsByStatusAsync(string airlineId, ShipmentStatus status, int page = 1, int pageSize = 10)
+        {
+            var query = _repository.GetAll<Shipment>()
+                .Where(s => s.AirlineId.ToString() == airlineId && s.Status == status);
 
             var totalCount = await query.CountAsync();
 
@@ -128,6 +163,21 @@ namespace GHI_ASSET_CARGO.Core.Services
             };
 
             await _repository.Add(note);
+            await _unitOfWork.SaveChangesAsync();
+
+            return Result.Success();
+        }
+
+        public async Task<Result> DeleteShipmentAsync(string shipmentId, string airlineId)
+        {
+            var shipment = await _repository.FindById<Shipment>(Guid.Parse(shipmentId));
+            if (shipment == null)
+                return new Error[] { new("Shipment.NotFound", "Shipment not found.") };
+
+            if (!string.Equals(shipment.AirlineId.ToString(), airlineId, StringComparison.OrdinalIgnoreCase))
+                return new Error[] { new("Shipment.Forbidden", "You do not have access to this shipment.") };
+
+            _repository.Remove(shipment);
             await _unitOfWork.SaveChangesAsync();
 
             return Result.Success();

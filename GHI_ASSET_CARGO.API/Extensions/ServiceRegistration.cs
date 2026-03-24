@@ -119,6 +119,8 @@ namespace GHI_ASSET_CARGO.API.Extensions
             services.AddScoped<IAuthService, AuthService>();
             services.AddScoped<IEmailService, EmailService>();
             services.AddScoped<IShipmentService, ShipmentService>();
+            services.AddScoped<IDocumentService, DocumentService>();
+            services.AddScoped<IFinancialService, FinancialService>();
         }
     }
 }

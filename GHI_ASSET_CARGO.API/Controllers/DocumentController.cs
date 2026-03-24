@@ -1,0 +1,124 @@
+using GHI_ASSET_CARGO.API.Dtos;
+using GHI_ASSET_CARGO.Core.Abstractions;
+using GHI_ASSET_CARGO.Core.Dtos;
+using GHI_ASSET_CARGO.Core.Dtos.Document;
+using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Mvc;
+using System.Security.Claims;
+
+namespace GHI_ASSET_CARGO.API.Controllers
+{
+    [ApiController]
+    [Route("api/airlines/{airlineId}/shipments/{shipmentId}/documents")]
+    [Authorize]
+    public class DocumentController : ControllerBase
+    {
+        private readonly IDocumentService _documentService;
+
+        public DocumentController(IDocumentService documentService)
+        {
+            _documentService = documentService;
+        }
+
+        private IActionResult? EnsureUserCanAccessAirline(string airlineId)
+        {
+            var userAirlineId = User.FindFirstValue("AirlineId");
+            if (string.IsNullOrWhiteSpace(userAirlineId))
+                return StatusCode(403, ResponseDto<object>.Failure(new[] { new Error("Auth.AirlineRequired", "User is not associated with an airline.") }, 403));
+
+            if (!string.Equals(userAirlineId, airlineId, StringComparison.OrdinalIgnoreCase))
+                return StatusCode(403, ResponseDto<object>.Failure(new[] { new Error("Auth.AirlineForbidden", "You do not have access to this airline.") }, 403));
+
+            return null;
+        }
+
+        [HttpGet("get-documents")]
+        public async Task<IActionResult> GetDocuments(string airlineId, Guid shipmentId, [FromQuery] int page = 1, [FromQuery] int pageSize = 10)
+        {
+            var forbidden = EnsureUserCanAccessAirline(airlineId);
+            if (forbidden != null) return forbidden;
+
+            var result = await _documentService.GetDocumentsByShipmentAsync(shipmentId, airlineId, page, pageSize);
+            if (result.IsFailure)
+                return BadRequest(ResponseDto<object>.Failure(result.Errors));
+
+            return Ok(ResponseDto<object>.Success(result.Data));
+        }
+
+        [HttpGet("{id}/get-document-by-id")]
+        public async Task<IActionResult> GetDocumentById(string airlineId, Guid shipmentId, Guid id)
+        {
+            var forbidden = EnsureUserCanAccessAirline(airlineId);
+            if (forbidden != null) return forbidden;
+
+            var result = await _documentService.GetDocumentByIdAsync(id, airlineId);
+            if (result.IsFailure)
+                return NotFound(ResponseDto<object>.Failure(result.Errors, 404));
+
+            return Ok(ResponseDto<object>.Success(result.Data));
+        }
+
+        [HttpPost("upload-document")]
+        public async Task<IActionResult> UploadDocument(string airlineId, Guid shipmentId, [FromForm] UploadDocumentRequestDto dto)
+        {
+            var forbidden = EnsureUserCanAccessAirline(airlineId);
+            if (forbidden != null) return forbidden;
+
+            var file = dto.File;
+            if (file == null || file.Length == 0)
+                return BadRequest(ResponseDto<object>.Failure(new[] { new Error("Document.InvalidFile", "File is required.") }));
+
+            var allowedTypes = new[] { "application/pdf", "image/jpeg", "image/jpg", "image/png" };
+            if (!allowedTypes.Contains(file.ContentType?.ToLowerInvariant()))
+                return BadRequest(ResponseDto<object>.Failure(new[] { new Error("Document.UnsupportedType", "Only PDF, JPG, JPEG and PNG are allowed.") }));
+
+            // TODO: integrate Cloudinary upload and replace this placeholder path
+            var storagePath = $"cloudinary://uploads/{Guid.NewGuid()}/{file.FileName}";
+
+            var createDto = new CreateShipmentDocumentRequestDto
+            {
+                FileName = file.FileName,
+                ContentType = file.ContentType ?? string.Empty,
+                FileSizeBytes = file.Length,
+                StoragePath = storagePath,
+                UploadedByUserId = dto.UploadedByUserId
+            };
+
+            var result = await _documentService.UploadDocumentAsync(shipmentId, airlineId, createDto);
+            if (result.IsFailure)
+                return BadRequest(ResponseDto<object>.Failure(result.Errors));
+
+            return CreatedAtAction(nameof(GetDocumentById), new { airlineId, shipmentId, id = result.Data.Id }, ResponseDto<object>.Success(result.Data));
+        }
+
+        [HttpPut("{id}/update-document")]
+        public async Task<IActionResult> UpdateDocument(string airlineId, Guid shipmentId, Guid id, [FromBody] UpdateShipmentDocumentRequestDto dto)
+        {
+            var forbidden = EnsureUserCanAccessAirline(airlineId);
+            if (forbidden != null) return forbidden;
+
+            if (dto.Id != id)
+                return BadRequest(ResponseDto<object>.Failure(new[] { new Error("Document.IdMismatch", "Document ID in URL does not match request body.") }));
+
+            var result = await _documentService.UpdateDocumentAsync(id, airlineId, dto);
+            if (result.IsFailure)
+                return BadRequest(ResponseDto<object>.Failure(result.Errors));
+
+            return Ok(ResponseDto<object>.Success(result.Data));
+        }
+
+        [HttpDelete("{id}/delete-document")]
+        public async Task<IActionResult> DeleteDocument(string airlineId, Guid shipmentId, Guid id)
+        {
+            var forbidden = EnsureUserCanAccessAirline(airlineId);
+            if (forbidden != null) return forbidden;
+
+            var result = await _documentService.DeleteDocumentAsync(id, airlineId);
+            if (result.IsFailure)
+                return NotFound(ResponseDto<object>.Failure(result.Errors, 404));
+
+            return Ok(ResponseDto<object>.Success("Document deleted successfully."));
+        }
+    }
+}
+
