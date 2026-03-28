@@ -16,7 +16,7 @@ namespace GHI_ASSET_CARGO.Domain.Entities
 
         public string MAWB { get; set; } = null!;
 
-        public DateTime DateOfIssue { get; set; }
+        public DateTime? DateOfIssue { get; set; }
 
         public string? AgentsOrClients { get; set; }
 
@@ -40,7 +40,7 @@ namespace GHI_ASSET_CARGO.Domain.Entities
 
         public decimal? FreightAmountNGN { get; set; }
 
-        public decimal NCAACharges5Percent { get; set; }
+        public decimal? NCAACharges5Percent { get; set; }
 
         public decimal? TotalChargeNGN { get; set; }
 
@@ -48,13 +48,13 @@ namespace GHI_ASSET_CARGO.Domain.Entities
 
         public decimal? FuelSurcharge { get; set; }
 
-        public decimal SECSurcharge { get; set; }
+        public decimal? SECSurcharge { get; set; }
 
         public decimal? HandlingSurcharge { get; set; }
 
         public decimal? SurchargeDueAgent { get; set; }
 
-        public decimal AWBFee { get; set; }
+        public decimal? AWBFee { get; set; }
 
         public decimal? GSACommissionNGN { get; set; }
 

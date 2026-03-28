@@ -5,7 +5,7 @@ namespace GHI_ASSET_CARGO.Core.Dtos.Financial
         public Guid Id { get; set; }
         public Guid ShipmentId { get; set; }
         public string MAWB { get; set; } = default!;
-        public DateTime DateOfIssue { get; set; }
+        public DateTime? DateOfIssue { get; set; }
         public string? AgentsOrClients { get; set; } = default!;
         public string? Product { get; set; } = default!;
         public string? Routing { get; set; } = default!;

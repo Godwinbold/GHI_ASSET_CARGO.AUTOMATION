@@ -1,6 +1,11 @@
 using GHI_ASSET_CARGO.API.Extensions;
 using GHI_ASSET_CARGO.API.Middlewares;
+using GHI_ASSET_CARGO.Core.Abstractions;
+using GHI_ASSET_CARGO.Data;
+using GHI_ASSET_CARGO.Infrastructure;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.AspNetCore.Identity;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
 using System.Text;
 
@@ -52,6 +57,21 @@ builder.Services.AddAuthentication(options =>
 });
 
 var app = builder.Build();
+
+using (var scope = app.Services.CreateScope())
+{
+    var services = scope.ServiceProvider;
+
+    var context = services.GetRequiredService<AppDbContext>();
+    var unitOfWork = services.GetRequiredService<IUnitOfWork>();
+    var roleManager = services.GetRequiredService<RoleManager<IdentityRole<Guid>>>();
+
+    // Apply migrations
+    context.Database.Migrate();
+
+    // Seed data
+    await DataSeeder.SeedAsync(context, unitOfWork, roleManager);
+}
 
 app.UseSwagger();
 app.UseSwaggerUI();

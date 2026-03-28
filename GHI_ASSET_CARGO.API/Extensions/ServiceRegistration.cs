@@ -41,65 +41,7 @@ namespace GHI_ASSET_CARGO.API.Extensions
             });
 
 
-            //services.AddAuthentication(options =>
-            //{
-            //    options.DefaultAuthenticateScheme = JwtBearerDefaults.AuthenticationScheme;
-            //    options.DefaultScheme = JwtBearerDefaults.AuthenticationScheme;
-            //    options.DefaultChallengeScheme = JwtBearerDefaults.AuthenticationScheme;
-            //}).AddJwtBearer(options =>
-            //{
-            //    var key = Encoding.UTF8.GetBytes(configuration["JWT:Key"]!);
-
-            //    options.MapInboundClaims = false;
-
-            //    options.TokenValidationParameters = new TokenValidationParameters
-            //    {
-            //        ValidateIssuerSigningKey = true,
-            //        IssuerSigningKey = new SymmetricSecurityKey(key),
-            //        ValidateLifetime = true,
-            //        ValidateAudience = false,
-            //        ValidateIssuer = false,
-            //        ClockSkew = TimeSpan.Zero
-            //    };
-            //});
-
-            //services.AddAuthentication(options =>
-            //{
-            //    options.DefaultAuthenticateScheme = JwtBearerDefaults.AuthenticationScheme;
-            //    options.DefaultChallengeScheme = JwtBearerDefaults.AuthenticationScheme;
-            //})
-            //.AddJwtBearer(options =>
-            //{
-            //    var key = Encoding.UTF8.GetBytes(configuration["JWT:Key"]!);
-
-            //    options.Events = new JwtBearerEvents
-            //    {
-            //        OnAuthenticationFailed = context =>
-            //        {
-            //            Console.WriteLine("AUTH FAILED: " + context.Exception.Message);
-            //            return Task.CompletedTask;
-            //        },
-            //        OnTokenValidated = context =>
-            //        {
-            //            Console.WriteLine("TOKEN VALIDATED");
-            //            return Task.CompletedTask;
-            //        },
-            //        OnChallenge = context =>
-            //        {
-            //            Console.WriteLine("AUTH CHALLENGE");
-            //            return Task.CompletedTask;
-            //        }
-            //    };
-
-            //    options.TokenValidationParameters = new TokenValidationParameters
-            //    {
-            //        ValidateIssuerSigningKey = true,
-            //        IssuerSigningKey = new SymmetricSecurityKey(key),
-            //        ValidateIssuer = false,
-            //        ValidateAudience = false,
-            //        ValidateLifetime = true,
-            //        ClockSkew = TimeSpan.Zero
-            //    };
+           
             //});
 
             services.AddCors(options =>
@@ -121,6 +63,7 @@ namespace GHI_ASSET_CARGO.API.Extensions
             services.AddScoped<IShipmentService, ShipmentService>();
             services.AddScoped<IDocumentService, DocumentService>();
             services.AddScoped<IFinancialService, FinancialService>();
+            services.AddScoped<IExecutiveService, ExecutiveService>();
         }
     }
 }

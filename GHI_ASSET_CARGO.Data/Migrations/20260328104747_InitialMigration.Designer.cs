@@ -12,8 +12,8 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace GHI_ASSET_CARGO.Data.Migrations
 {
     [DbContext(typeof(AppDbContext))]
-    [Migration("20260308110319_SeededRoles")]
-    partial class SeededRoles
+    [Migration("20260328104747_InitialMigration")]
+    partial class InitialMigration
     {
         /// <inheritdoc />
         protected override void BuildTargetModel(ModelBuilder modelBuilder)
@@ -33,7 +33,8 @@ namespace GHI_ASSET_CARGO.Data.Migrations
 
                     b.Property<string>("AirlineName")
                         .IsRequired()
-                        .HasColumnType("nvarchar(max)");
+                        .HasMaxLength(100)
+                        .HasColumnType("nvarchar(100)");
 
                     b.Property<DateTimeOffset>("CreatedDate")
                         .HasColumnType("datetimeoffset");
@@ -43,7 +44,7 @@ namespace GHI_ASSET_CARGO.Data.Migrations
 
                     b.HasKey("Id");
 
-                    b.ToTable("Airlines");
+                    b.ToTable("Airlines", (string)null);
                 });
 
             modelBuilder.Entity("GHI_ASSET_CARGO.Domain.Entities.AppUser", b =>
@@ -142,20 +143,109 @@ namespace GHI_ASSET_CARGO.Data.Migrations
                         .ValueGeneratedOnAdd()
                         .HasColumnType("uniqueidentifier");
 
-                    b.Property<Guid?>("AirlineId")
+                    b.Property<decimal?>("AWBFee")
+                        .HasColumnType("decimal(18,2)");
+
+                    b.Property<string>("AgentsOrClients")
+                        .HasMaxLength(200)
+                        .HasColumnType("nvarchar(200)");
+
+                    b.Property<Guid>("AirlineId")
                         .HasColumnType("uniqueidentifier");
+
+                    b.Property<decimal?>("AmtDueAirline")
+                        .HasColumnType("decimal(18,2)");
+
+                    b.Property<decimal?>("ChargeableWeightKg")
+                        .HasColumnType("decimal(18,2)");
+
+                    b.Property<decimal?>("ChargesCollect")
+                        .HasColumnType("decimal(18,2)");
 
                     b.Property<DateTimeOffset>("CreatedDate")
                         .HasColumnType("datetimeoffset");
 
+                    b.Property<DateTime?>("DateOfIssue")
+                        .HasColumnType("datetime2");
+
+                    b.Property<decimal?>("DueAPGInc")
+                        .HasColumnType("decimal(18,2)");
+
+                    b.Property<decimal?>("DueSLC")
+                        .HasColumnType("decimal(18,2)");
+
+                    b.Property<string>("FlightNo")
+                        .HasMaxLength(20)
+                        .HasColumnType("nvarchar(20)");
+
+                    b.Property<decimal?>("FreightAmountNGN")
+                        .HasColumnType("decimal(18,2)");
+
+                    b.Property<decimal?>("FuelSurcharge")
+                        .HasColumnType("decimal(18,2)");
+
+                    b.Property<decimal?>("GSACommissionNGN")
+                        .HasColumnType("decimal(18,2)");
+
+                    b.Property<decimal?>("GrossWeightKg")
+                        .HasColumnType("decimal(18,2)");
+
+                    b.Property<decimal?>("HandlingSurcharge")
+                        .HasColumnType("decimal(18,2)");
+
+                    b.Property<string>("MAWB")
+                        .IsRequired()
+                        .HasMaxLength(50)
+                        .HasColumnType("nvarchar(50)");
+
+                    b.Property<decimal?>("NCAACharges5Percent")
+                        .HasColumnType("decimal(18,2)");
+
+                    b.Property<int?>("Pieces")
+                        .HasColumnType("int");
+
+                    b.Property<string>("Product")
+                        .HasMaxLength(100)
+                        .HasColumnType("nvarchar(100)");
+
+                    b.Property<decimal?>("PublishedRates")
+                        .HasColumnType("decimal(18,2)");
+
+                    b.Property<decimal?>("ROE")
+                        .HasColumnType("decimal(18,2)");
+
+                    b.Property<string>("Routing")
+                        .HasMaxLength(100)
+                        .HasColumnType("nvarchar(100)");
+
+                    b.Property<decimal?>("SECSurcharge")
+                        .HasColumnType("decimal(18,2)");
+
+                    b.Property<Guid>("ShipmentId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<decimal?>("SpotRate")
+                        .HasColumnType("decimal(18,2)");
+
+                    b.Property<decimal?>("SurchargeDueAgent")
+                        .HasColumnType("decimal(18,2)");
+
+                    b.Property<decimal?>("TotalChargeNGN")
+                        .HasColumnType("decimal(18,2)");
+
                     b.Property<DateTimeOffset>("UpdatedDate")
                         .HasColumnType("datetimeoffset");
+
+                    b.Property<decimal?>("VATOnCommission")
+                        .HasColumnType("decimal(18,2)");
 
                     b.HasKey("Id");
 
                     b.HasIndex("AirlineId");
 
-                    b.ToTable("Financials");
+                    b.HasIndex("ShipmentId");
+
+                    b.ToTable("Financials", (string)null);
                 });
 
             modelBuilder.Entity("GHI_ASSET_CARGO.Domain.Entities.Shipment", b =>
@@ -169,7 +259,8 @@ namespace GHI_ASSET_CARGO.Data.Migrations
 
                     b.Property<string>("AirwayBillNumber")
                         .IsRequired()
-                        .HasColumnType("nvarchar(max)");
+                        .HasMaxLength(50)
+                        .HasColumnType("nvarchar(50)");
 
                     b.Property<DateTimeOffset>("CreatedDate")
                         .HasColumnType("datetimeoffset");
@@ -185,9 +276,63 @@ namespace GHI_ASSET_CARGO.Data.Migrations
 
                     b.HasKey("Id");
 
-                    b.HasIndex("AirlineId");
+                    b.HasIndex("AirlineId", "AirwayBillNumber")
+                        .IsUnique();
 
-                    b.ToTable("Shipments");
+                    b.ToTable("Shipments", (string)null);
+                });
+
+            modelBuilder.Entity("GHI_ASSET_CARGO.Domain.Entities.ShipmentDocument", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<string>("AirwayBillNumber")
+                        .IsRequired()
+                        .HasMaxLength(50)
+                        .HasColumnType("nvarchar(50)");
+
+                    b.Property<string>("ContentType")
+                        .HasMaxLength(100)
+                        .HasColumnType("nvarchar(100)");
+
+                    b.Property<DateTimeOffset>("CreatedDate")
+                        .HasColumnType("datetimeoffset");
+
+                    b.Property<string>("FileName")
+                        .IsRequired()
+                        .HasMaxLength(255)
+                        .HasColumnType("nvarchar(255)");
+
+                    b.Property<long?>("FileSizeBytes")
+                        .HasColumnType("bigint");
+
+                    b.Property<DateTime>("ShipmentDate")
+                        .HasColumnType("datetime2");
+
+                    b.Property<Guid>("ShipmentId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<string>("StoragePath")
+                        .IsRequired()
+                        .HasMaxLength(500)
+                        .HasColumnType("nvarchar(500)");
+
+                    b.Property<DateTimeOffset>("UpdatedDate")
+                        .HasColumnType("datetimeoffset");
+
+                    b.Property<DateTime>("UploadedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<Guid>("UploadedByUserId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("ShipmentId");
+
+                    b.ToTable("ShipmentDocuments", (string)null);
                 });
 
             modelBuilder.Entity("GHI_ASSET_CARGO.Domain.Entities.ShipmentNote", b =>
@@ -198,7 +343,8 @@ namespace GHI_ASSET_CARGO.Data.Migrations
 
                     b.Property<string>("Content")
                         .IsRequired()
-                        .HasColumnType("nvarchar(max)");
+                        .HasMaxLength(500)
+                        .HasColumnType("nvarchar(500)");
 
                     b.Property<DateTimeOffset>("CreatedDate")
                         .HasColumnType("datetimeoffset");
@@ -211,7 +357,9 @@ namespace GHI_ASSET_CARGO.Data.Migrations
 
                     b.HasKey("Id");
 
-                    b.ToTable("ShipmentNotes");
+                    b.HasIndex("ShipmentId");
+
+                    b.ToTable("ShipmentNotes", (string)null);
                 });
 
             modelBuilder.Entity("Microsoft.AspNetCore.Identity.IdentityRole<System.Guid>", b =>
@@ -347,18 +495,54 @@ namespace GHI_ASSET_CARGO.Data.Migrations
 
             modelBuilder.Entity("GHI_ASSET_CARGO.Domain.Entities.Financial", b =>
                 {
-                    b.HasOne("GHI_ASSET_CARGO.Domain.Entities.Airline", null)
+                    b.HasOne("GHI_ASSET_CARGO.Domain.Entities.Airline", "Airline")
                         .WithMany("Financials")
-                        .HasForeignKey("AirlineId");
+                        .HasForeignKey("AirlineId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("GHI_ASSET_CARGO.Domain.Entities.Shipment", "Shipment")
+                        .WithMany()
+                        .HasForeignKey("ShipmentId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Airline");
+
+                    b.Navigation("Shipment");
                 });
 
             modelBuilder.Entity("GHI_ASSET_CARGO.Domain.Entities.Shipment", b =>
                 {
-                    b.HasOne("GHI_ASSET_CARGO.Domain.Entities.Airline", null)
+                    b.HasOne("GHI_ASSET_CARGO.Domain.Entities.Airline", "Airline")
                         .WithMany("Shipments")
                         .HasForeignKey("AirlineId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.Navigation("Airline");
+                });
+
+            modelBuilder.Entity("GHI_ASSET_CARGO.Domain.Entities.ShipmentDocument", b =>
+                {
+                    b.HasOne("GHI_ASSET_CARGO.Domain.Entities.Shipment", "Shipment")
+                        .WithMany("ShipmentDocuments")
+                        .HasForeignKey("ShipmentId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
+
+                    b.Navigation("Shipment");
+                });
+
+            modelBuilder.Entity("GHI_ASSET_CARGO.Domain.Entities.ShipmentNote", b =>
+                {
+                    b.HasOne("GHI_ASSET_CARGO.Domain.Entities.Shipment", "Shipment")
+                        .WithMany("ShipmentNotes")
+                        .HasForeignKey("ShipmentId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Shipment");
                 });
 
             modelBuilder.Entity("Microsoft.AspNetCore.Identity.IdentityRoleClaim<System.Guid>", b =>
@@ -417,6 +601,13 @@ namespace GHI_ASSET_CARGO.Data.Migrations
                     b.Navigation("Financials");
 
                     b.Navigation("Shipments");
+                });
+
+            modelBuilder.Entity("GHI_ASSET_CARGO.Domain.Entities.Shipment", b =>
+                {
+                    b.Navigation("ShipmentDocuments");
+
+                    b.Navigation("ShipmentNotes");
                 });
 #pragma warning restore 612, 618
         }

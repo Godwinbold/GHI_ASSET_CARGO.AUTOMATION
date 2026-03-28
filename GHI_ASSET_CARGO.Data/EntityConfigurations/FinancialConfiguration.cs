@@ -100,7 +100,7 @@ namespace GHI_ASSET_CARGO.Data.EntityConfigurations
 
             // BaseEntity fields
             builder.Property(f => f.CreatedDate).IsRequired();
-            builder.Property(f => f.UpdatedDate).IsRequired(false);
+            builder.Property(f => f.UpdatedDate).IsRequired();
         }
     }
 }
