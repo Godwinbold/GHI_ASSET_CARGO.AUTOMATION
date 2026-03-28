@@ -52,6 +52,20 @@ namespace GHI_ASSET_CARGO.API.Controllers
             return Ok(ResponseDto<object>.Success(result.Data));
         }
 
+        /// <summary>Get all financial records for an airline.</summary>
+        [HttpGet("~/api/airlines/{airlineId}/financials")]
+        public async Task<IActionResult> GetAllForAirline(string airlineId)
+        {
+            var forbidden = EnsureUserCanAccessAirline(airlineId);
+            if (forbidden != null) return forbidden;
+
+            var result = await _financialService.GetFinancialsByAirlineAsync(airlineId);
+            if (result.IsFailure)
+                return NotFound(ResponseDto<object>.Failure(result.Errors, 404));
+
+            return Ok(ResponseDto<object>.Success(result.Data));
+        }
+
         /// <summary>Create a new financial record for the shipment.</summary>
         [HttpPost("create-financial")]
         public async Task<IActionResult> Create(string airlineId, Guid shipmentId, [FromBody] CreateFinancialRequestDto dto)

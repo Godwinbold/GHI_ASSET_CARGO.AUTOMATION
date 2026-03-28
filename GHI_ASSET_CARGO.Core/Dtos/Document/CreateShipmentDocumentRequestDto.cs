@@ -6,6 +6,6 @@ namespace GHI_ASSET_CARGO.Core.Dtos.Document
         public string ContentType { get; set; } = default!;
         public long FileSizeBytes { get; set; }
         public string StoragePath { get; set; } = default!;
-        public int UploadedByUserId { get; set; }
+        public Guid UploadedByUserId { get; set; }
     }
 }

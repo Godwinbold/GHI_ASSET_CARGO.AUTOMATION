@@ -32,6 +32,17 @@ namespace GHI_ASSET_CARGO.API.Controllers
             return null;
         }
 
+        /// <summary>Try to get the logged-in user's numeric id from the claims.</summary>
+        private bool TryGetLoggedInUserId(out Guid userId)
+        {
+            userId = Guid.Empty;
+            var idClaim = User.FindFirstValue(ClaimTypes.NameIdentifier);
+            if (string.IsNullOrWhiteSpace(idClaim))
+                return false;
+
+            return Guid.TryParse(idClaim, out userId);
+        }
+
         [HttpGet("get-documents")]
         public async Task<IActionResult> GetDocuments(string airlineId, Guid shipmentId, [FromQuery] int page = 1, [FromQuery] int pageSize = 10)
         {
@@ -59,6 +70,11 @@ namespace GHI_ASSET_CARGO.API.Controllers
         }
 
         [HttpPost("upload-document")]
+        /// <summary>
+        /// Upload a document for a shipment. The uploader's user id is derived from the authenticated JWT
+        /// (ClaimTypes.NameIdentifier) and should NOT be supplied by the frontend. The server will set
+        /// `UploadedByUserId` from the token.
+        /// </summary>
         public async Task<IActionResult> UploadDocument(string airlineId, Guid shipmentId, [FromForm] UploadDocumentRequestDto dto)
         {
             var forbidden = EnsureUserCanAccessAirline(airlineId);
@@ -75,13 +91,16 @@ namespace GHI_ASSET_CARGO.API.Controllers
             // TODO: integrate Cloudinary upload and replace this placeholder path
             var storagePath = $"cloudinary://uploads/{Guid.NewGuid()}/{file.FileName}";
 
+            if (!TryGetLoggedInUserId(out var uploaderId))
+                return StatusCode(403, ResponseDto<object>.Failure(new[] { new Error("Auth.UserRequired", "Unable to determine the logged-in user.") }, 403));
+
             var createDto = new CreateShipmentDocumentRequestDto
             {
                 FileName = file.FileName,
                 ContentType = file.ContentType ?? string.Empty,
                 FileSizeBytes = file.Length,
                 StoragePath = storagePath,
-                UploadedByUserId = dto.UploadedByUserId
+                UploadedByUserId = uploaderId
             };
 
             var result = await _documentService.UploadDocumentAsync(shipmentId, airlineId, createDto);

@@ -4,3 +4,17 @@ GET {{GHI_ASSET_CARGO.API_HostAddress}}/weatherforecast/
 Accept: application/json
 
 ###
+
+### Upload a document (multipart/form-data)
+# Note: do NOT include UploadedByUserId in the form — the API derives it from the JWT.
+POST {{GHI_ASSET_CARGO.API_HostAddress}}/api/airlines/:airlineId/shipments/:shipmentId/documents/upload-document
+Authorization: Bearer {{JWT_TOKEN}}
+Content-Type: multipart/form-data
+
+--boundary
+Content-Disposition: form-data; name="File"; filename="example.pdf"
+Content-Type: application/pdf
+
+< ./example.pdf
+--boundary--
+

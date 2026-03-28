@@ -11,7 +11,7 @@ namespace GHI_ASSET_CARGO.Core.Dtos.Document
         public long? FileSizeBytes { get; set; }
         public string StoragePath { get; set; } = default!;
         public DateTime UploadedAt { get; set; }
-        public int UploadedByUserId { get; set; }
+        public Guid UploadedByUserId { get; set; }
         public DateTimeOffset CreatedDate { get; set; }
         public DateTimeOffset UpdatedDate { get; set; }
     }

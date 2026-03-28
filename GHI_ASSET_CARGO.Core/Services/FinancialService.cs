@@ -3,6 +3,8 @@ using GHI_ASSET_CARGO.Core.Dtos;
 using GHI_ASSET_CARGO.Core.Dtos.Financial;
 using GHI_ASSET_CARGO.Domain.Entities;
 using Microsoft.EntityFrameworkCore;
+using System.Collections.Generic;
+using System.Linq;
 
 namespace GHI_ASSET_CARGO.Core.Services
 {
@@ -39,6 +41,18 @@ namespace GHI_ASSET_CARGO.Core.Services
                 return Result.Failure<FinancialResponseDto>(new[] { new Error("Financial.NotFound", "Financial record not found.") });
 
             return Result<FinancialResponseDto>.Success(MapToResponse(financial));
+        }
+
+        public async Task<Result<List<FinancialResponseDto>>> GetFinancialsByAirlineAsync(string airlineId)
+        {
+            var financials = await _repository.GetAll<Financial>()
+                .Include(f => f.Shipment)
+                .Where(f => f.AirlineId.ToString() == airlineId)
+                .ToListAsync();
+
+            var dtos = financials.Select(MapToResponse).ToList();
+
+            return Result<List<FinancialResponseDto>>.Success(dtos);
         }
 
         public async Task<Result<FinancialResponseDto>> CreateFinancialAsync(Guid shipmentId, string airlineId, CreateFinancialRequestDto dto)

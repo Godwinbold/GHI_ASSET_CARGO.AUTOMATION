@@ -11,7 +11,7 @@ namespace GHI_ASSET_CARGO.Domain.Entities
         public long? FileSizeBytes { get; set; }
         public string StoragePath { get; set; }
         public DateTime UploadedAt { get; set; } = DateTime.UtcNow;
-        public int UploadedByUserId { get; set; }
+        public Guid UploadedByUserId { get; set; }
         public Guid ShipmentId { get; set; }
         public Shipment Shipment { get; set; }
     }
