@@ -56,6 +56,20 @@ namespace GHI_ASSET_CARGO.API.Controllers
             return Ok(ResponseDto<object>.Success(result.Data));
         }
 
+        /// <summary>Get all documents for an airline (not tied to a shipment).</summary>
+        [HttpGet("~/api/airlines/{airlineId}/get-documents-for-airline")]
+        public async Task<IActionResult> GetDocumentsForAirline(string airlineId, [FromQuery] int page = 1, [FromQuery] int pageSize = 10)
+        {
+            var forbidden = EnsureUserCanAccessAirline(airlineId);
+            if (forbidden != null) return forbidden;
+
+            var result = await _documentService.GetDocumentsByAirlineAsync(airlineId, page, pageSize);
+            if (result.IsFailure)
+                return BadRequest(ResponseDto<object>.Failure(result.Errors));
+
+            return Ok(ResponseDto<object>.Success(result.Data));
+        }
+
         [HttpGet("{id}/get-document-by-id")]
         public async Task<IActionResult> GetDocumentById(string airlineId, Guid shipmentId, Guid id)
         {
@@ -71,9 +85,7 @@ namespace GHI_ASSET_CARGO.API.Controllers
 
         [HttpPost("upload-document")]
         /// <summary>
-        /// Upload a document for a shipment. The uploader's user id is derived from the authenticated JWT
-        /// (ClaimTypes.NameIdentifier) and should NOT be supplied by the frontend. The server will set
-        /// `UploadedByUserId` from the token.
+        /// Upload a document for a shipment. 
         /// </summary>
         public async Task<IActionResult> UploadDocument(string airlineId, Guid shipmentId, [FromForm] UploadDocumentRequestDto dto)
         {

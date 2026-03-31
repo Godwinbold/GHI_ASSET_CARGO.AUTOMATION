@@ -23,6 +23,8 @@ namespace GHI_ASSET_CARGO.API.Controllers
         /// Get the executive dashboard data. Accepts optional query filters `startDate`, `endDate`, and `airlineId`.
         /// </summary>
         [HttpGet("dashboard")]
+        [ProducesResponseType(typeof(ResponseDto<ExecutiveDashboardResponseDto>), StatusCodes.Status200OK)]
+        [ProducesResponseType(typeof(ResponseDto<object>), StatusCodes.Status400BadRequest)]
         public async Task<IActionResult> GetDashboard([FromQuery] DateTimeOffset? startDate, [FromQuery] DateTimeOffset? endDate, [FromQuery] Guid? airlineId)
         {
             var request = new ExecutiveDashboardRequestDto

@@ -54,6 +54,28 @@ namespace GHI_ASSET_CARGO.API.Controllers
             return Ok(ResponseDto<object>.Success(result.Data));
         }
 
+        /// <summary>Get shipments for an airline with flexible filters: userId, awbNumber, date range (startDate/endDate), status. Date range defaults to last month if not supplied.</summary>
+        [HttpGet("filter")]
+        public async Task<IActionResult> GetShipmentsFiltered(string airlineId, [FromQuery] Guid? userId = null, [FromQuery] string? awb = null, [FromQuery] DateTimeOffset? startDate = null, [FromQuery] DateTimeOffset? endDate = null, [FromQuery] string? status = null, [FromQuery] int page = 1, [FromQuery] int pageSize = 10)
+        {
+            var forbidden = EnsureUserCanAccessAirline(airlineId);
+            if (forbidden != null) return forbidden;
+
+            ShipmentStatus? shipmentStatus = null;
+            if (!string.IsNullOrWhiteSpace(status))
+            {
+                if (!Enum.TryParse<ShipmentStatus>(status, true, out var parsed))
+                    return BadRequest(ResponseDto<object>.Failure(new[] { new Error("Shipment.InvalidStatus", "Invalid shipment status filter.") }));
+                shipmentStatus = parsed;
+            }
+
+            var result = await _shipmentService.GetShipmentsForAirlineFilteredAsync(airlineId, userId, awb, startDate, endDate, shipmentStatus, page, pageSize);
+            if (result.IsFailure)
+                return BadRequest(ResponseDto<object>.Failure(result.Errors));
+
+            return Ok(ResponseDto<object>.Success(result.Data));
+        }
+
         [HttpGet("get-by-status")]
         public async Task<IActionResult> GetShipmentsByStatus(string airlineId, [FromQuery] string status, [FromQuery] int page = 1, [FromQuery] int pageSize = 10)
         {

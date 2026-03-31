@@ -7,6 +7,7 @@ namespace GHI_ASSET_CARGO.Core.Abstractions
     public interface IShipmentService
     {
         Task<Result<PagedResultDto<ShipmentResponseDto>>> GetShipmentsForAirlineAsync(string airlineId, int page, int pageSize, string? awbSearch = null);
+        Task<Result<PagedResultDto<ShipmentResponseDto>>> GetShipmentsForAirlineFilteredAsync(string airlineId, Guid? userId = null, string? awb = null, DateTimeOffset? startDate = null, DateTimeOffset? endDate = null, ShipmentStatus? status = null, int page = 1, int pageSize = 10);
         Task<Result<ShipmentResponseDto>> GetShipmentByIdAsync(string shipmentId, string airlineId);
         Task<Result<ShipmentResponseDto>> GetShipmentByAwbAsync(string airwayBillNumber, string airlineId);
         Task<Result<ShipmentResponseDto>> CreateShipmentAsync(string airlineId, CreateShipmentRequestDto dto);

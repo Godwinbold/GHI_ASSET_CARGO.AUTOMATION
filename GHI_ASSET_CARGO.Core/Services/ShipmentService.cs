@@ -88,6 +88,62 @@ namespace GHI_ASSET_CARGO.Core.Services
             return Result<PagedResultDto<ShipmentResponseDto>>.Success(paged);
         }
 
+        public async Task<Result<PagedResultDto<ShipmentResponseDto>>> GetShipmentsForAirlineFilteredAsync(string airlineId, Guid? userId = null, string? awb = null, DateTimeOffset? startDate = null, DateTimeOffset? endDate = null, ShipmentStatus? status = null, int page = 1, int pageSize = 10)
+        {
+            // default date range: last month to now if not supplied
+            var start = startDate ?? DateTimeOffset.UtcNow.AddMonths(-1);
+            var end = endDate ?? DateTimeOffset.UtcNow;
+
+            var query = _repository.GetAll<Shipment>().Where(s => s.AirlineId.ToString() == airlineId);
+
+            if (!string.IsNullOrWhiteSpace(awb))
+                query = query.Where(s => s.AirwayBillNumber.Contains(awb));
+
+            if (status.HasValue)
+                query = query.Where(s => s.Status == status.Value);
+
+            // apply date range
+            query = query.Where(s => s.ShipmentDate >= start && s.ShipmentDate <= end);
+
+            // if filtering by user, find shipments that have documents uploaded by that user
+            if (userId.HasValue)
+            {
+                var docShipments = _repository.GetAll<Domain.Entities.ShipmentDocument>()
+                    .Where(d => d.UploadedByUserId == userId.Value)
+                    .Select(d => d.ShipmentId);
+
+                query = query.Where(s => docShipments.Contains(s.Id));
+            }
+
+            var totalCount = await query.CountAsync();
+
+            var shipments = await query
+                .OrderByDescending(s => s.ShipmentDate)
+                .Skip((page - 1) * pageSize)
+                .Take(pageSize)
+                .ToListAsync();
+
+            var items = new List<ShipmentResponseDto>();
+            foreach (var s in shipments)
+            {
+                var notes = await _repository.GetAll<ShipmentNote>()
+                    .Where(n => n.ShipmentId == s.Id)
+                    .OrderByDescending(n => n.CreatedDate)
+                    .ToListAsync();
+                items.Add(MapToResponse(s, notes));
+            }
+
+            var paged = new PagedResultDto<ShipmentResponseDto>
+            {
+                Items = items,
+                TotalCount = totalCount,
+                Page = page,
+                PageSize = pageSize
+            };
+
+            return Result<PagedResultDto<ShipmentResponseDto>>.Success(paged);
+        }
+
         public async Task<Result<ShipmentResponseDto>> GetShipmentByIdAsync(string shipmentId, string airlineId)
         {
             var shipment = await _repository.FindById<Shipment>(Guid.Parse(shipmentId));

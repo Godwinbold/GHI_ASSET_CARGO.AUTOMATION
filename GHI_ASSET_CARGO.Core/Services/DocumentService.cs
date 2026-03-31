@@ -58,6 +58,30 @@ namespace GHI_ASSET_CARGO.Core.Services
             return Result<ShipmentDocumentResponseDto>.Success(MapToDto(document));
         }
 
+        public async Task<Result<PagedResultDto<ShipmentDocumentResponseDto>>> GetDocumentsByAirlineAsync(string airlineId, int page = 1, int pageSize = 10)
+        {
+            var query = _repository.GetAll<ShipmentDocument>()
+                .Include(d => d.Shipment)
+                .Where(d => d.Shipment.AirlineId.ToString() == airlineId);
+
+            var totalCount = await query.CountAsync();
+            var documents = await query
+                .OrderByDescending(d => d.UploadedAt)
+                .Skip((page - 1) * pageSize)
+                .Take(pageSize)
+                .ToListAsync();
+
+            var result = new PagedResultDto<ShipmentDocumentResponseDto>
+            {
+                Items = documents.Select(MapToDto).ToList(),
+                TotalCount = totalCount,
+                Page = page,
+                PageSize = pageSize
+            };
+
+            return Result<PagedResultDto<ShipmentDocumentResponseDto>>.Success(result);
+        }
+
         public async Task<Result<ShipmentDocumentResponseDto>> UploadDocumentAsync(Guid shipmentId, string airlineId, CreateShipmentDocumentRequestDto dto)
         {
             var shipment = await _repository.FindById<Shipment>(shipmentId);
