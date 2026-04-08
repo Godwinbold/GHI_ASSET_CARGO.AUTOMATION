@@ -40,5 +40,27 @@ namespace GHI_ASSET_CARGO.API.Controllers
 
             return Ok(ResponseDto<object>.Success(result.Data));
         }
+
+        /// <summary>
+        /// Get the analytical dashboard data with monthly metrics and growth comparisons. Accepts optional query filters `startDate`, `endDate`, and `airlineId`.
+        /// </summary>
+        [HttpGet("analytical")]
+        [ProducesResponseType(typeof(ResponseDto<AnalyticalResponseDto>), StatusCodes.Status200OK)]
+        [ProducesResponseType(typeof(ResponseDto<object>), StatusCodes.Status400BadRequest)]
+        public async Task<IActionResult> GetAnalytical([FromQuery] DateTimeOffset? startDate, [FromQuery] DateTimeOffset? endDate, [FromQuery] Guid? airlineId)
+        {
+            var request = new ExecutiveDashboardRequestDto
+            {
+                StartDate = startDate,
+                EndDate = endDate,
+                AirlineId = airlineId
+            };
+
+            var result = await _executiveService.GetAnalyticalAsync(request);
+            if (result.IsFailure)
+                return BadRequest(ResponseDto<object>.Failure(result.Errors));
+
+            return Ok(ResponseDto<object>.Success(result.Data));
+        }
     }
 }

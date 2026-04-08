@@ -14,10 +14,12 @@ namespace GHI_ASSET_CARGO.API.Controllers
     public class DocumentController : ControllerBase
     {
         private readonly IDocumentService _documentService;
+        private readonly ICloudinaryService _cloudinaryService;
 
-        public DocumentController(IDocumentService documentService)
+        public DocumentController(IDocumentService documentService, ICloudinaryService cloudinaryService)
         {
             _documentService = documentService;
+            _cloudinaryService = cloudinaryService;
         }
 
         private IActionResult? EnsureUserCanAccessAirline(string airlineId)
@@ -92,6 +94,9 @@ namespace GHI_ASSET_CARGO.API.Controllers
             var forbidden = EnsureUserCanAccessAirline(airlineId);
             if (forbidden != null) return forbidden;
 
+             if (!TryGetLoggedInUserId(out var uploaderId))
+                return StatusCode(403, ResponseDto<object>.Failure(new[] { new Error("Auth.UserRequired", "Unable to determine the logged-in user.") }, 403));
+
             var file = dto.File;
             if (file == null || file.Length == 0)
                 return BadRequest(ResponseDto<object>.Failure(new[] { new Error("Document.InvalidFile", "File is required.") }));
@@ -100,11 +105,17 @@ namespace GHI_ASSET_CARGO.API.Controllers
             if (!allowedTypes.Contains(file.ContentType?.ToLowerInvariant()))
                 return BadRequest(ResponseDto<object>.Failure(new[] { new Error("Document.UnsupportedType", "Only PDF, JPG, JPEG and PNG are allowed.") }));
 
-            // TODO: integrate Cloudinary upload and replace this placeholder path
-            var storagePath = $"cloudinary://uploads/{Guid.NewGuid()}/{file.FileName}";
-
-            if (!TryGetLoggedInUserId(out var uploaderId))
-                return StatusCode(403, ResponseDto<object>.Failure(new[] { new Error("Auth.UserRequired", "Unable to determine the logged-in user.") }, 403));
+            // Upload file to Cloudinary
+            string storagePath;
+            try
+            {
+                var folder = $"{airlineId}/shipments/{shipmentId}";
+                storagePath = await _cloudinaryService.UploadFileAsync(file, folder);
+            }
+            catch (Exception ex)
+            {
+                return BadRequest(ResponseDto<object>.Failure(new[] { new Error("Document.UploadFailed", $"Failed to upload file to cloud storage: {ex.Message}") }));
+            }
 
             var createDto = new CreateShipmentDocumentRequestDto
             {
