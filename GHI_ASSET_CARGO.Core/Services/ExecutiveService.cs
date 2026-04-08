@@ -90,7 +90,8 @@ namespace GHI_ASSET_CARGO.Core.Services
                 {
                     TotalShipments = totalShipments,
                     TotalRevenue = totalRevenue,
-                    AverageWeightKg = avgWeight
+                    AverageWeightKg = avgWeight,
+                    TotalWeightKg = totalWeight
                 }
             };
 
