@@ -24,18 +24,18 @@ namespace GHI_ASSET_CARGO.Core.Services
         private readonly IRepository _repository;
         private readonly IConfiguration _configuration;
         private readonly IUnitOfWork _unitOfWork;
-        private readonly IEmailService _emailService;
+        private readonly INotificationService _notificationService;
         private readonly ILogger<AuthService> _logger;
 
         public AuthService(UserManager<AppUser> userManager, IRepository repository, IJwtService jwtService,
-            IConfiguration configuration, IUnitOfWork unitOfWork, IEmailService emailService, ILogger<AuthService> logger)
+            IConfiguration configuration, IUnitOfWork unitOfWork, INotificationService notificationService, ILogger<AuthService> logger)
         {
             _userManager = userManager;
             _repository = repository;
             _jwtService = jwtService;
             _configuration = configuration;
             _unitOfWork = unitOfWork;
-            _emailService = emailService;
+            _notificationService = notificationService;
             _logger = logger;
         }
 
@@ -79,10 +79,6 @@ namespace GHI_ASSET_CARGO.Core.Services
                 return new Error[] { new("Error", "Failed to create user") };
             }
         }
-            
-        
-
-
 
         public async Task<Result> RegisterAdmin(AdminRegisterDTO registerAdminDto)
         {
@@ -121,12 +117,16 @@ namespace GHI_ASSET_CARGO.Core.Services
                 var encodedEmail = HttpUtility.UrlEncode(user.Email);
                 var encodedToken = HttpUtility.UrlEncode(token);
                 var confirmationLink = $"{confirmEmailUrl}?email={encodedEmail}&token={encodedToken}";
-                var body =
-                    @$"Hi {user.FirstName}, Please click the link <a href='{confirmationLink}'>here</a> to confirm your account's email";
+
+                var templateData = new Dictionary<string, string>
+                {
+                    ["firstName"] = user.FirstName,
+                    ["confirmationLink"] = confirmationLink
+                };
+
                 try
                 {
-                    var emailResult = await _emailService.SendEmailAsync(user.Email, "Confirm Email", body);
-
+                    var emailResult = await _notificationService.SendTemplateAsync(user.Email, "Confirm Email", "admin_confirmation_email.html", templateData);
                     if (!emailResult)
                     {
                         _logger.LogInformation($">>>>>>Sending of Email to {registerAdminDto.Email} failed");
@@ -136,7 +136,6 @@ namespace GHI_ASSET_CARGO.Core.Services
                 {
                     _logger.LogError($">>>>>>Sending of Email to {registerAdminDto.Email} failed, {ex.Message}");
                 }
-                
 
                 return Result.Success();
             }
@@ -185,16 +184,28 @@ namespace GHI_ASSET_CARGO.Core.Services
                 var encodedEmail = HttpUtility.UrlEncode(user.Email);
                 var encodedToken = HttpUtility.UrlEncode(token);
                 var confirmationLink = $"{confirmEmailUrl}?email={encodedEmail}&token={encodedToken}";
-                var body =
-                    @$"Hi {user.FirstName}, Please click the link <a href='{confirmationLink}'>here</a> to confirm your account's email";
+
+                var organizationName = string.Empty;
+                if (Guid.TryParse(registerExecutiveDto.AirlineId, out var airlineId))
+                {
+                    var airline = await _repository.FindById<Airline>(airlineId);
+                    organizationName = airline?.AirlineName ?? string.Empty;
+                }
+
+                var templateData = new Dictionary<string, string>
+                {
+                    ["firstName"] = user.FirstName,
+                    ["organizationName"] = string.IsNullOrWhiteSpace(organizationName) ? "GHI Asset Cargo" : organizationName,
+                    ["confirmationLink"] = confirmationLink
+                };
+
                 try
                 {
-                    var emailResult = await _emailService.SendEmailAsync(user.Email, "Confirm Email", body);
+                    var emailResult = await _notificationService.SendTemplateAsync(user.Email, "Confirm Email", "executive_confirmation_email.html", templateData);
                     if (!emailResult)
                     {
                         _logger.LogInformation($">>>>>>Sending of Email to {registerExecutiveDto.Email} failed");
                     }
-
                 }
                 catch (Exception ex)
                 {
@@ -275,12 +286,10 @@ namespace GHI_ASSET_CARGO.Core.Services
                 var encodedAirline = HttpUtility.UrlEncode(inviteUserDto.AirlineId);
                 var acceptLink = $"{inviteUrl}?email={encodedEmail}&token={encodedToken}&role={encodedRole}&airlineId={encodedAirline}";
 
-                var body = @$"Hello,<br/><br/>You have been invited to join <strong>{airline.AirlineName}</strong> as a <strong>{normalizedRole}</strong>.<br/>Please accept your invitation by clicking <a href='{acceptLink}'>this link</a>.<br/><br/>Once you accept, you will be asked to complete your registration and set your password.<br/><br/>If you did not expect this invitation, please ignore this email.";
-
                 try
                 {
-                    var emailResult = await _emailService.SendEmailAsync(user.Email, "Invitation to join", body);
-                    if (!emailResult)
+                    var invitationSent = await _notificationService.InviteAsync(user.Email, airline.AirlineName, acceptLink);
+                    if (!invitationSent)
                     {
                         _logger.LogInformation($">>>>>>Sending invitation email to {inviteUserDto.Email} failed");
                     }
@@ -447,9 +456,13 @@ namespace GHI_ASSET_CARGO.Core.Services
 
             const string emailSubject = "Your New Password";
 
-            var emailBody = $"Hello {user.FirstName}, click this link to reset your password: {resetLink}.";
+            var templateData = new Dictionary<string, string>
+            {
+                ["firstName"] = string.IsNullOrWhiteSpace(user.FirstName) ? "User" : user.FirstName,
+                ["resetLink"] = resetLink
+            };
 
-            var isSuccessful = await _emailService.SendEmailAsync(resetPasswordDto.Email, emailSubject, emailBody);
+            var isSuccessful = await _notificationService.SendTemplateAsync(resetPasswordDto.Email, emailSubject, "reset_password_email.html", templateData);
             if (!isSuccessful)
                 return new Error[] { new("Auth.Error", "Error occured while sending reset password email") };
 

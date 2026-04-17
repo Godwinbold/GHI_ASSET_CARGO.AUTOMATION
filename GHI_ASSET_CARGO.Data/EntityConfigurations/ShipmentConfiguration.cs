@@ -32,6 +32,10 @@ namespace GHI_ASSET_CARGO.Data.EntityConfigurations
             builder.Property(s => s.ShipmentDate)
                 .IsRequired();
 
+            builder.Property(s => s.HasFinancial)
+                .IsRequired()
+                .HasDefaultValue(false);
+
             // BaseEntity Properties
             builder.Property(s => s.CreatedDate)
                 .IsRequired();
@@ -54,6 +58,11 @@ namespace GHI_ASSET_CARGO.Data.EntityConfigurations
             builder.HasMany(s => s.ShipmentDocuments)
                 .WithOne()
                 .HasForeignKey("ShipmentId")
+                .OnDelete(DeleteBehavior.Cascade);
+
+            builder.HasOne(s => s.Financial)
+                .WithOne(f => f.Shipment)
+                .HasForeignKey<Financial>(f => f.ShipmentId)
                 .OnDelete(DeleteBehavior.Cascade);
         }
     }

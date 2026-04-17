@@ -249,6 +249,7 @@ namespace GHI_ASSET_CARGO.Core.Services
                 Status = s.Status,
                 StatusDisplay = s.Status.ToString(),
                 ShipmentDate = s.ShipmentDate,
+                HasFinancial = s.HasFinancial,
                 CreatedDate = s.CreatedDate,
                 UpdatedDate = s.UpdatedDate,
                 Notes = notes.Select(n => new ShipmentNoteDto

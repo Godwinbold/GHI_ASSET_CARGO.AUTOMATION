@@ -10,6 +10,7 @@ namespace GHI_ASSET_CARGO.Core.Dtos.Shipment
         public ShipmentStatus Status { get; set; }
         public string StatusDisplay { get; set; } = default!;
         public DateTimeOffset ShipmentDate { get; set; }
+        public bool HasFinancial { get; set; }
         public DateTimeOffset CreatedDate { get; set; }
         public DateTimeOffset UpdatedDate { get; set; }
         public List<ShipmentNoteDto> Notes { get; set; } = new();

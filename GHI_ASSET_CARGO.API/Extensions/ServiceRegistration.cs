@@ -64,7 +64,7 @@ namespace GHI_ASSET_CARGO.API.Extensions
             services.AddScoped<IUnitOfWork, UnitOfWork>();
             services.AddScoped<IRepository, Repository>();
             services.AddScoped<IAuthService, AuthService>();
-            services.AddScoped<IEmailService, EmailService>();
+            services.AddScoped<INotificationService, NotificationService>();
             services.AddScoped<ICloudinaryService, CloudinaryService>();
             services.AddScoped<IShipmentService, ShipmentService>();
             services.AddScoped<IDocumentService, DocumentService>();

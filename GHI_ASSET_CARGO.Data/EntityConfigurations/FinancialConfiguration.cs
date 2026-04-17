@@ -93,11 +93,6 @@ namespace GHI_ASSET_CARGO.Data.EntityConfigurations
                    .HasForeignKey(f => f.AirlineId)
                    .OnDelete(DeleteBehavior.Restrict);
 
-            builder.HasOne(f => f.Shipment)
-                   .WithMany() // Assuming Shipment doesn't have Financials collection
-                   .HasForeignKey(f => f.ShipmentId)
-                   .OnDelete(DeleteBehavior.Cascade);
-
             // BaseEntity fields
             builder.Property(f => f.CreatedDate).IsRequired();
             builder.Property(f => f.UpdatedDate).IsRequired();

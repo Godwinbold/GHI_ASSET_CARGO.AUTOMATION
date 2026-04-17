@@ -100,6 +100,8 @@ namespace GHI_ASSET_CARGO.Core.Services
             };
 
             await _repository.Add(financial);
+            shipment.HasFinancial = true;
+            _repository.Update(shipment);
             await _unitOfWork.SaveChangesAsync();
 
             return Result<FinancialResponseDto>.Success(MapToResponse(financial));
@@ -156,6 +158,12 @@ namespace GHI_ASSET_CARGO.Core.Services
 
             if (financial == null)
                 return Result.Failure(new[] { new Error("Financial.NotFound", "Financial record not found.") });
+
+            if (financial.Shipment != null)
+            {
+                financial.Shipment.HasFinancial = false;
+                _repository.Update(financial.Shipment);
+            }
 
             _repository.Remove(financial);
             await _unitOfWork.SaveChangesAsync();
