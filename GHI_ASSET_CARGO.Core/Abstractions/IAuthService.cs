@@ -11,7 +11,8 @@ namespace GHI_ASSET_CARGO.Core.Abstractions
     public interface IAuthService
     {
         Task<Result<string>> RegisterUser(RegisterRequestDto registerUserDto,string airlineId);
-      
+        Task<Result> InviteUser(InviteUserDto inviteUserDto);
+        Task<Result> AcceptInvite(AcceptInviteDto acceptInviteDto);
         Task<Result> RegisterAdmin(AdminRegisterDTO registerAdminDto);
         Task<Result> RegisterExecutive(ExecutiveRegisterDTO registerExecutiveDto);
         Task<Result<LoginResponseDto>> Login(LoginRequestDto loginUserDtox, string airlineId);

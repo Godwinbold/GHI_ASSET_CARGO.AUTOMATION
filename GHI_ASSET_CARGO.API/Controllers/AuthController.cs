@@ -128,6 +128,21 @@ namespace GHI_ASSET_CARGO.API.Controllers
             return Ok(ResponseDto<object>.Success());
         }
 
+        [HttpPost("accept-invite")]
+        public async Task<IActionResult> AcceptInvite([FromBody] AcceptInviteDto acceptInviteDto)
+        {
+            if (!ModelState.IsValid)
+            {
+                return BadRequest(ResponseDto<object>.Failure(ModelState.GetErrors()));
+            }
+
+            var result = await _authService.AcceptInvite(acceptInviteDto);
+            if (result.IsFailure)
+                return BadRequest(ResponseDto<object>.Failure(result.Errors));
+
+            return Ok(ResponseDto<object>.Success("Invitation accepted successfully"));
+        }
+
         [HttpGet("confirm-email")]
         public async Task<IActionResult> ConfirmEmail([FromQuery] string email, [FromQuery] string token)
         {

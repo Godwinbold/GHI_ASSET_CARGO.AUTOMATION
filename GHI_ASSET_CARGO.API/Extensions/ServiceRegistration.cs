@@ -1,8 +1,10 @@
 using GHI_ASSET_CARGO.Core.Abstractions;
 using GHI_ASSET_CARGO.Core.Services;
+using GHI_ASSET_CARGO.Domain.Options;
 using GHI_ASSET_CARGO.Infrastructure;
 using GHI_ASSET_CARGO.Infrastructure.Repositories;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.Extensions.Options;
 using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi.Models;
 using System.Text;
@@ -54,6 +56,9 @@ namespace GHI_ASSET_CARGO.API.Extensions
                             .AllowAnyHeader();
                     });
             });
+
+            services.Configure<PostMarkOptions>(configuration.GetSection(PostMarkOptions.SectionName))
+            .AddSingleton(x => x.GetRequiredService<IOptions<PostMarkOptions>>().Value);
 
             services.AddScoped<IJwtService, JwtService>();
             services.AddScoped<IUnitOfWork, UnitOfWork>();

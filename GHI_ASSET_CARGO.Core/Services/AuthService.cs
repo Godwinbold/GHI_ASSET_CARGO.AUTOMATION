@@ -8,6 +8,8 @@ using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
 using System;
 using System.Collections.Generic;
+using System.ComponentModel.DataAnnotations;
+using System.Linq;
 using System.Security.Claims;
 using System.Web;
 
@@ -26,13 +28,14 @@ namespace GHI_ASSET_CARGO.Core.Services
         private readonly ILogger<AuthService> _logger;
 
         public AuthService(UserManager<AppUser> userManager, IRepository repository, IJwtService jwtService,
-            IConfiguration configuration, IUnitOfWork unitOfWork, ILogger<AuthService> logger)
+            IConfiguration configuration, IUnitOfWork unitOfWork, IEmailService emailService, ILogger<AuthService> logger)
         {
             _userManager = userManager;
             _repository = repository;
             _jwtService = jwtService;
             _configuration = configuration;
             _unitOfWork = unitOfWork;
+            _emailService = emailService;
             _logger = logger;
         }
 
@@ -205,8 +208,146 @@ namespace GHI_ASSET_CARGO.Core.Services
                 _logger.LogError(ex.Message, ex);
                 return new Error[] { new("Error", "Failed to create executive user") };
             }
+        }
 
+        public async Task<Result> InviteUser(InviteUserDto inviteUserDto)
+        {
+            try
+            {
+                if (inviteUserDto == null)
+                    return new Error[] { new("Invitation.Error", "Invalid invitation request") };
 
+                if (string.IsNullOrWhiteSpace(inviteUserDto.Email) || !new EmailAddressAttribute().IsValid(inviteUserDto.Email))
+                    return new Error[] { new("Invitation.Error", "A valid email is required") };
+
+                if (string.IsNullOrWhiteSpace(inviteUserDto.AirlineId))
+                    return new Error[] { new("Invitation.Error", "Airline is required") };
+
+                if (string.IsNullOrWhiteSpace(inviteUserDto.Role))
+                    return new Error[] { new("Invitation.Error", "Role is required") };
+
+                var existingUser = await _userManager.FindByEmailAsync(inviteUserDto.Email);
+                if (existingUser != null)
+                    return new Error[] { new("Invitation.Error", "Email already invited or registered") };
+
+                if (!Guid.TryParse(inviteUserDto.AirlineId, out var airlineId))
+                    return new Error[] { new("Invitation.Error", "Invalid airline identifier") };
+
+                var airline = await _repository.FindById<Airline>(airlineId);
+                if (airline == null)
+                    return new Error[] { new("Airline.NotFound", "Airline not found") };
+
+                var normalizedRole = inviteUserDto.Role.Trim().ToUpperInvariant();
+                var validRoles = new[] { RolesConstant.User, RolesConstant.Admin, RolesConstant.Executive };
+                if (!validRoles.Contains(normalizedRole))
+                    return new Error[] { new("Invitation.Error", "Invalid role. Allowed roles are USER, ADMIN, EXECUTIVE") };
+
+                var user = new AppUser
+                {
+                    FirstName = string.Empty,
+                    MiddleName = string.Empty,
+                    LastName = string.Empty,
+                    Email = inviteUserDto.Email,
+                    PhoneNumber = string.Empty,
+                    UserName = inviteUserDto.Email,
+                    CreatedDate = DateTimeOffset.UtcNow,
+                    UpdatedDate = DateTimeOffset.UtcNow,
+                    AirlineId = inviteUserDto.AirlineId,
+                    EmailConfirmed = false
+                };
+
+                var createResult = await _userManager.CreateAsync(user);
+                if (!createResult.Succeeded)
+                    return createResult.Errors.Select(error => new Error(error.Code, error.Description)).ToArray();
+
+                var roleResult = await _userManager.AddToRoleAsync(user, normalizedRole);
+                if (!roleResult.Succeeded)
+                    return roleResult.Errors.Select(error => new Error(error.Code, error.Description)).ToArray();
+
+                var inviteUrl = _configuration["AcceptInviteUrl"];
+                if (string.IsNullOrWhiteSpace(inviteUrl))
+                    return new Error[] { new("Configuration.Error", "AcceptInviteUrl is not configured") };
+
+                var token = await _userManager.GeneratePasswordResetTokenAsync(user);
+                var encodedEmail = HttpUtility.UrlEncode(user.Email);
+                var encodedToken = HttpUtility.UrlEncode(token);
+                var encodedRole = HttpUtility.UrlEncode(normalizedRole);
+                var encodedAirline = HttpUtility.UrlEncode(inviteUserDto.AirlineId);
+                var acceptLink = $"{inviteUrl}?email={encodedEmail}&token={encodedToken}&role={encodedRole}&airlineId={encodedAirline}";
+
+                var body = @$"Hello,<br/><br/>You have been invited to join <strong>{airline.AirlineName}</strong> as a <strong>{normalizedRole}</strong>.<br/>Please accept your invitation by clicking <a href='{acceptLink}'>this link</a>.<br/><br/>Once you accept, you will be asked to complete your registration and set your password.<br/><br/>If you did not expect this invitation, please ignore this email.";
+
+                try
+                {
+                    var emailResult = await _emailService.SendEmailAsync(user.Email, "Invitation to join", body);
+                    if (!emailResult)
+                    {
+                        _logger.LogInformation($">>>>>>Sending invitation email to {inviteUserDto.Email} failed");
+                    }
+                }
+                catch (Exception ex)
+                {
+                    _logger.LogError(ex, "Failed to send invitation email to {Email}", inviteUserDto.Email);
+                }
+
+                return Result.Success();
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Failed to invite user");
+                return new Error[] { new("Error", "Failed to invite user") };
+            }
+        }
+
+        public async Task<Result> AcceptInvite(AcceptInviteDto acceptInviteDto)
+        {
+            try
+            {
+                if (acceptInviteDto == null)
+                    return new Error[] { new("Invitation.Error", "Invalid request") };
+
+                if (!new EmailAddressAttribute().IsValid(acceptInviteDto.Email))
+                    return new Error[] { new("Invitation.Error", "A valid email is required") };
+
+                if (acceptInviteDto.Password != acceptInviteDto.ConfirmPassword)
+                    return new Error[] { new("Invitation.Error", "Password and confirm password must match") };
+
+                var user = await _userManager.FindByEmailAsync(acceptInviteDto.Email);
+                if (user == null)
+                    return new Error[] { new("Invitation.Error", "No invitation exists for this email") };
+
+                if (await _userManager.HasPasswordAsync(user))
+                    return new Error[] { new("Invitation.Error", "This invitation has already been accepted") };
+
+                if (!string.IsNullOrWhiteSpace(acceptInviteDto.AirlineId) &&
+                    !string.Equals(user.AirlineId, acceptInviteDto.AirlineId, StringComparison.OrdinalIgnoreCase))
+                {
+                    return new Error[] { new("Invitation.Error", "Airline information does not match the invitation") };
+                }
+
+                var resetResult = await _userManager.ResetPasswordAsync(user, acceptInviteDto.Token, acceptInviteDto.Password);
+                if (!resetResult.Succeeded)
+                    return resetResult.Errors.Select(error => new Error(error.Code, error.Description)).ToArray();
+
+                user.FirstName = acceptInviteDto.FirstName;
+                user.LastName = acceptInviteDto.LastName;
+                user.MiddleName = acceptInviteDto.MiddleName;
+                user.PhoneNumber = acceptInviteDto.PhoneNumber;
+                user.IdNumber = acceptInviteDto.IdNumber;
+                user.UpdatedDate = DateTimeOffset.UtcNow;
+                user.EmailConfirmed = true;
+
+                var updateResult = await _userManager.UpdateAsync(user);
+                if (!updateResult.Succeeded)
+                    return updateResult.Errors.Select(error => new Error(error.Code, error.Description)).ToArray();
+
+                return Result.Success();
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Failed to accept invitation");
+                return new Error[] { new("Error", "Failed to complete invitation") };
+            }
         }
 
         public async Task<Result<LoginResponseDto>> Login(LoginRequestDto loginUserDto, string airlineId)

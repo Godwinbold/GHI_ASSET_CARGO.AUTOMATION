@@ -56,6 +56,11 @@ builder.Services.AddAuthentication(options =>
     };
 });
 
+ builder.Services
+            .AddHttpClient()
+            .AddHttpContextAccessor()
+            .AddEndpointsApiExplorer();
+
 var app = builder.Build();
 
 using (var scope = app.Services.CreateScope())
