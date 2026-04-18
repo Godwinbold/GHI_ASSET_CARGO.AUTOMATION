@@ -11,13 +11,18 @@ public class NotificationService(IHostEnvironment hostEnvironment, IMailSenderSe
 	private readonly IHostEnvironment _hostEnvironment = hostEnvironment;
 	private readonly IMailSenderService _mailSenderService = mailSenderService;
 
-    public async Task<bool> InviteAsync(string email, string organizationName, string invitationLink)
+    public async Task<bool> InviteAsync(string email, string organizationName, string role, string? airlineName, string invitationLink)
 	{
 		var fullPath = Path.Combine(_hostEnvironment.ContentRootPath, "wwwroot", "organization_invite_email.html");
 		var htmlMessage = File.ReadAllText(fullPath);
 		htmlMessage = htmlMessage.Replace("{{organizationName}}", organizationName);
+		htmlMessage = htmlMessage.Replace("{{role}}", role);
+		htmlMessage = htmlMessage.Replace("{{airlineName}}", string.IsNullOrWhiteSpace(airlineName) ? "the platform" : airlineName);
 		htmlMessage = htmlMessage.Replace("{{invitationLink}}", invitationLink);
-		var isMailSent =  await _mailSenderService.SendByPostMarkAppAsync(htmlMessage, email, "GHIAsset Organization Invite!");
+		var subject = string.IsNullOrWhiteSpace(airlineName)
+		    ? $"GHI Asset Cargo Invitation: {role}"
+		    : $"GHI Asset Cargo Invitation to {airlineName}";
+		var isMailSent =  await _mailSenderService.SendByPostMarkAppAsync(htmlMessage, email, subject);
 		return isMailSent;
 	}
 

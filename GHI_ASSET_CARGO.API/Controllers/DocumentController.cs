@@ -1,4 +1,5 @@
 using GHI_ASSET_CARGO.API.Dtos;
+using GHI_ASSET_CARGO.API.Extensions;
 using GHI_ASSET_CARGO.Core.Abstractions;
 using GHI_ASSET_CARGO.Core.Dtos;
 using GHI_ASSET_CARGO.Core.Dtos.Document;
@@ -29,11 +30,11 @@ namespace GHI_ASSET_CARGO.API.Controllers
             if (User.IsInRole(RolesConstant.Admin) || User.IsInRole(RolesConstant.Executive))
                 return null;
 
-            var userAirlineId = User.FindFirstValue("AirlineId");
-            if (string.IsNullOrWhiteSpace(userAirlineId))
+            var userAirlineIds = User.GetAirlineIds();
+            if (!userAirlineIds.Any())
                 return StatusCode(403, ResponseDto<object>.Failure(new[] { new Error("Auth.AirlineRequired", "User is not associated with an airline.") }, 403));
 
-            if (!string.Equals(userAirlineId, airlineId, StringComparison.OrdinalIgnoreCase))
+            if (!userAirlineIds.Contains(airlineId, StringComparer.OrdinalIgnoreCase))
                 return StatusCode(403, ResponseDto<object>.Failure(new[] { new Error("Auth.AirlineForbidden", "You do not have access to this airline.") }, 403));
 
             return null;

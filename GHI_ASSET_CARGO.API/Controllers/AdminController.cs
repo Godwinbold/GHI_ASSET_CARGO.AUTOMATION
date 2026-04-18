@@ -34,5 +34,25 @@ namespace GHI_ASSET_CARGO.API.Controllers
 
             return Ok(ResponseDto<object>.Success("Invitation sent successfully"));
         }
+
+        [HttpPost("users/{userId}/airlines/{airlineId}")]
+        public async Task<IActionResult> AddUserToAirline(Guid userId, Guid airlineId)
+        {
+            var result = await _authService.AddUserToAirline(userId, airlineId);
+            if (result.IsFailure)
+                return BadRequest(ResponseDto<object>.Failure(result.Errors));
+
+            return Ok(ResponseDto<object>.Success("User airline membership added successfully"));
+        }
+
+        [HttpDelete("users/{userId}/airlines/{airlineId}")]
+        public async Task<IActionResult> RemoveUserFromAirline(Guid userId, Guid airlineId)
+        {
+            var result = await _authService.RemoveUserFromAirline(userId, airlineId);
+            if (result.IsFailure)
+                return BadRequest(ResponseDto<object>.Failure(result.Errors));
+
+            return NoContent();
+        }
     }
 }

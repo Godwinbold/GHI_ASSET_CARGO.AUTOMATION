@@ -291,7 +291,12 @@ namespace GHI_ASSET_CARGO.Core.Services
                 bool invitationSent = false;
                 try
                 {
-                    invitationSent = await _notificationService.InviteAsync(user.Email, airline?.AirlineName ?? "GHI Asset Cargo", acceptLink);
+                    invitationSent = await _notificationService.InviteAsync(
+                        user.Email,
+                        airline?.AirlineName ?? "GHI Asset Cargo",
+                        normalizedRole,
+                        airline?.AirlineName,
+                        acceptLink);
                 }
                 catch (Exception ex)
                 {
@@ -312,6 +317,91 @@ namespace GHI_ASSET_CARGO.Core.Services
                 _logger.LogError(ex, "Failed to invite user");
                 return new Error[] { new("Error", "Failed to invite user") };
             }
+        }
+
+        public async Task<Result> AddUserToAirline(Guid userId, Guid airlineId)
+        {
+            var user = await _userManager.FindByIdAsync(userId.ToString());
+            if (user == null)
+                return new Error[] { new("User.NotFound", "User not found") };
+
+            var userRoles = await _userManager.GetRolesAsync(user);
+            if (!userRoles.Contains(RolesConstant.User))
+                return new Error[] { new("User.RoleInvalid", "Only USER accounts can be assigned airline memberships") };
+
+            var airline = await _repository.FindById<Airline>(airlineId);
+            if (airline == null)
+                return new Error[] { new("Airline.NotFound", "Airline not found") };
+
+            user.AirlineId = AddAirlineId(user.AirlineId, airlineId.ToString());
+            var updateResult = await _userManager.UpdateAsync(user);
+            if (!updateResult.Succeeded)
+                return updateResult.Errors.Select(error => new Error(error.Code, error.Description)).ToArray();
+
+            return Result.Success();
+        }
+
+        public async Task<Result> RemoveUserFromAirline(Guid userId, Guid airlineId)
+        {
+            var user = await _userManager.FindByIdAsync(userId.ToString());
+            if (user == null)
+                return new Error[] { new("User.NotFound", "User not found") };
+
+            var userRoles = await _userManager.GetRolesAsync(user);
+            if (!userRoles.Contains(RolesConstant.User))
+                return new Error[] { new("User.RoleInvalid", "Only USER accounts can have airline memberships removed") };
+
+            var airline = await _repository.FindById<Airline>(airlineId);
+            if (airline == null)
+                return new Error[] { new("Airline.NotFound", "Airline not found") };
+
+            user.AirlineId = RemoveAirlineId(user.AirlineId, airlineId.ToString());
+            var updateResult = await _userManager.UpdateAsync(user);
+            if (!updateResult.Succeeded)
+                return updateResult.Errors.Select(error => new Error(error.Code, error.Description)).ToArray();
+
+            return Result.Success();
+        }
+
+        private static bool UserHasAirline(AppUser user, string airlineId)
+        {
+            var airlineIds = ParseAirlineIds(user.AirlineId);
+            return airlineIds.Contains(airlineId, StringComparer.OrdinalIgnoreCase);
+        }
+
+        private static List<string> ParseAirlineIds(string? airlineIds)
+        {
+            if (string.IsNullOrWhiteSpace(airlineIds))
+                return new List<string>();
+
+            return airlineIds
+                .Split(new[] { ';', ',' }, StringSplitOptions.RemoveEmptyEntries)
+                .Select(x => x.Trim())
+                .Where(x => !string.IsNullOrWhiteSpace(x))
+                .Distinct(StringComparer.OrdinalIgnoreCase)
+                .ToList();
+        }
+
+        private static string AddAirlineId(string? existing, string airlineId)
+        {
+            var airlineIds = ParseAirlineIds(existing);
+            if (!airlineIds.Contains(airlineId, StringComparer.OrdinalIgnoreCase))
+                airlineIds.Add(airlineId);
+
+            return string.Join(";", airlineIds);
+        }
+
+        private static string RemoveAirlineId(string? existing, string airlineId)
+        {
+            var airlineIds = ParseAirlineIds(existing);
+            airlineIds.RemoveAll(x => string.Equals(x, airlineId, StringComparison.OrdinalIgnoreCase));
+            return string.Join(";", airlineIds);
+        }
+
+        private async Task<bool> IsAdminOrExecutive(AppUser user)
+        {
+            var roles = await _userManager.GetRolesAsync(user);
+            return roles.Contains(RolesConstant.Admin) || roles.Contains(RolesConstant.Executive);
         }
 
         public async Task<Result> AcceptInvite(AcceptInviteDto acceptInviteDto)
@@ -335,7 +425,7 @@ namespace GHI_ASSET_CARGO.Core.Services
                     return new Error[] { new("Invitation.Error", "This invitation has already been accepted") };
 
                 if (!string.IsNullOrWhiteSpace(acceptInviteDto.AirlineId) &&
-                    !string.Equals(user.AirlineId, acceptInviteDto.AirlineId, StringComparison.OrdinalIgnoreCase))
+                    !UserHasAirline(user, acceptInviteDto.AirlineId))
                 {
                     return new Error[] { new("Invitation.Error", "Airline information does not match the invitation") };
                 }
@@ -378,7 +468,7 @@ namespace GHI_ASSET_CARGO.Core.Services
             if (!isValidUser)
                 return new Error[] { new("Auth.Error", "email or password not correct") };
 
-            if (!string.Equals(user.AirlineId, airlineId, StringComparison.OrdinalIgnoreCase))
+if (!UserHasAirline(user, airlineId) && !await IsAdminOrExecutive(user))
                 return new Error[] { new("Auth.AirlineMismatch", "You do not have access to this airline portal. Please use your airline's login page.") };
             var roles = await _userManager.GetRolesAsync(user);
             var token = _jwtService.GenerateToken(user, roles);
@@ -406,7 +496,6 @@ namespace GHI_ASSET_CARGO.Core.Services
 
         public async Task<Result<LoginResponseDto>> GetCurrentLoggedInUser(string userId)
         {
-
 
             if (string.IsNullOrWhiteSpace(userId))
                 return new Error[] { new("Auth.Error", "Could not resolve the current user.") };

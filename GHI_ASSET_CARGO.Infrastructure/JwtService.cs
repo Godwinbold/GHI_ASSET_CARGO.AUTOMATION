@@ -62,7 +62,15 @@ namespace GHI_ASSET_CARGO.Infrastructure
 
             if (!string.IsNullOrEmpty(user.AirlineId))
             {
-                claims.Add(new Claim("AirlineId", user.AirlineId));
+                var airlineIds = user.AirlineId.Split(new[] { ';', ',' }, StringSplitOptions.RemoveEmptyEntries)
+                    .Select(x => x.Trim())
+                    .Where(x => !string.IsNullOrWhiteSpace(x))
+                    .Distinct(StringComparer.OrdinalIgnoreCase);
+
+                foreach (var airlineId in airlineIds)
+                {
+                    claims.Add(new Claim("AirlineId", airlineId));
+                }
             }
 
             claims.AddRange(roles.Select(r => new Claim(ClaimTypes.Role, r)));

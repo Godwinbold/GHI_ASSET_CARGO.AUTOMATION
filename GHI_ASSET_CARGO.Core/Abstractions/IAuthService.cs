@@ -15,6 +15,8 @@ namespace GHI_ASSET_CARGO.Core.Abstractions
         Task<Result> AcceptInvite(AcceptInviteDto acceptInviteDto);
         Task<Result> RegisterAdmin(AdminRegisterDTO registerAdminDto);
         Task<Result> RegisterExecutive(ExecutiveRegisterDTO registerExecutiveDto);
+        Task<Result> AddUserToAirline(Guid userId, Guid airlineId);
+        Task<Result> RemoveUserFromAirline(Guid userId, Guid airlineId);
         Task<Result<LoginResponseDto>> Login(LoginRequestDto loginUserDtox, string airlineId);
         Task<Result<LoginResponseDto>> GetCurrentLoggedInUser(string userId);
         Task<Result> ForgotPassword(ResetPasswordDto resetPasswordDto);
