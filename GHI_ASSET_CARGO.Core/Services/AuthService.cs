@@ -288,17 +288,21 @@ namespace GHI_ASSET_CARGO.Core.Services
                     acceptLink += $"&airlineId={encodedAirline}";
                 }
 
+                bool invitationSent = false;
                 try
                 {
-                    var invitationSent = await _notificationService.InviteAsync(user.Email, airline?.AirlineName ?? "GHI Asset Cargo", acceptLink);
-                    if (!invitationSent)
-                    {
-                        _logger.LogInformation($">>>>>>Sending invitation email to {inviteUserDto.Email} failed");
-                    }
+                    invitationSent = await _notificationService.InviteAsync(user.Email, airline?.AirlineName ?? "GHI Asset Cargo", acceptLink);
                 }
                 catch (Exception ex)
                 {
                     _logger.LogError(ex, "Failed to send invitation email to {Email}", inviteUserDto.Email);
+                    invitationSent = false;
+                }
+
+                if (!invitationSent)
+                {
+                    await _userManager.DeleteAsync(user);
+                    return new Error[] { new("Invitation.Error", "Failed to send invitation email") };
                 }
 
                 return Result.Success();
