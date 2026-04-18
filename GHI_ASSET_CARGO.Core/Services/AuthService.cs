@@ -99,7 +99,7 @@ namespace GHI_ASSET_CARGO.Core.Services
                     UserName = registerAdminDto.Email,
                     CreatedDate = DateTimeOffset.UtcNow,
                     UpdatedDate = DateTimeOffset.UtcNow,
-                    AirlineId = registerAdminDto.AirlineId,
+                    AirlineId = null,
                     IdNumber = registerAdminDto.IdNumber,
 
                 };
@@ -166,7 +166,7 @@ namespace GHI_ASSET_CARGO.Core.Services
                     UserName = registerExecutiveDto.Email,
                     CreatedDate = DateTimeOffset.UtcNow,
                     UpdatedDate = DateTimeOffset.UtcNow,
-                    AirlineId = registerExecutiveDto.AirlineId,
+                    AirlineId = null,
                     IdNumber = registerExecutiveDto.IdNumber,
 
                 };
@@ -231,27 +231,25 @@ namespace GHI_ASSET_CARGO.Core.Services
                 if (string.IsNullOrWhiteSpace(inviteUserDto.Email) || !new EmailAddressAttribute().IsValid(inviteUserDto.Email))
                     return new Error[] { new("Invitation.Error", "A valid email is required") };
 
-                if (string.IsNullOrWhiteSpace(inviteUserDto.AirlineId))
-                    return new Error[] { new("Invitation.Error", "Airline is required") };
-
-                if (string.IsNullOrWhiteSpace(inviteUserDto.Role))
-                    return new Error[] { new("Invitation.Error", "Role is required") };
-
-                var existingUser = await _userManager.FindByEmailAsync(inviteUserDto.Email);
-                if (existingUser != null)
-                    return new Error[] { new("Invitation.Error", "Email already invited or registered") };
-
-                if (!Guid.TryParse(inviteUserDto.AirlineId, out var airlineId))
-                    return new Error[] { new("Invitation.Error", "Invalid airline identifier") };
-
-                var airline = await _repository.FindById<Airline>(airlineId);
-                if (airline == null)
-                    return new Error[] { new("Airline.NotFound", "Airline not found") };
-
                 var normalizedRole = inviteUserDto.Role.Trim().ToUpperInvariant();
                 var validRoles = new[] { RolesConstant.User, RolesConstant.Admin, RolesConstant.Executive };
                 if (!validRoles.Contains(normalizedRole))
                     return new Error[] { new("Invitation.Error", "Invalid role. Allowed roles are USER, ADMIN, EXECUTIVE") };
+
+                // For Admin and Executive, AirlineId is not required
+                if (normalizedRole == RolesConstant.User && string.IsNullOrWhiteSpace(inviteUserDto.AirlineId))
+                    return new Error[] { new("Invitation.Error", "Airline is required for USER role") };
+
+                Airline? airline = null;
+                if (!string.IsNullOrWhiteSpace(inviteUserDto.AirlineId))
+                {
+                    if (!Guid.TryParse(inviteUserDto.AirlineId, out var airlineId))
+                        return new Error[] { new("Invitation.Error", "Invalid airline identifier") };
+
+                    airline = await _repository.FindById<Airline>(airlineId);
+                    if (airline == null)
+                        return new Error[] { new("Airline.NotFound", "Airline not found") };
+                }
 
                 var user = new AppUser
                 {
@@ -283,12 +281,16 @@ namespace GHI_ASSET_CARGO.Core.Services
                 var encodedEmail = HttpUtility.UrlEncode(user.Email);
                 var encodedToken = HttpUtility.UrlEncode(token);
                 var encodedRole = HttpUtility.UrlEncode(normalizedRole);
-                var encodedAirline = HttpUtility.UrlEncode(inviteUserDto.AirlineId);
-                var acceptLink = $"{inviteUrl}?email={encodedEmail}&token={encodedToken}&role={encodedRole}&airlineId={encodedAirline}";
+                var acceptLink = $"{inviteUrl}?email={encodedEmail}&token={encodedToken}&role={encodedRole}";
+                if (!string.IsNullOrWhiteSpace(inviteUserDto.AirlineId))
+                {
+                    var encodedAirline = HttpUtility.UrlEncode(inviteUserDto.AirlineId);
+                    acceptLink += $"&airlineId={encodedAirline}";
+                }
 
                 try
                 {
-                    var invitationSent = await _notificationService.InviteAsync(user.Email, airline.AirlineName, acceptLink);
+                    var invitationSent = await _notificationService.InviteAsync(user.Email, airline?.AirlineName ?? "GHI Asset Cargo", acceptLink);
                     if (!invitationSent)
                     {
                         _logger.LogInformation($">>>>>>Sending invitation email to {inviteUserDto.Email} failed");

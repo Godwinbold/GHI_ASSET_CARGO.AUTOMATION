@@ -58,8 +58,12 @@ namespace GHI_ASSET_CARGO.Infrastructure
                 new Claim(ClaimTypes.NameIdentifier, user.Id.ToString()),
                 new Claim(ClaimTypes.Name, $"{user.FirstName} {user.LastName}"),
                 new Claim(ClaimTypes.Email, user.Email!),
-                new Claim("AirlineId", user.AirlineId.ToString())
             };
+
+            if (!string.IsNullOrEmpty(user.AirlineId))
+            {
+                claims.Add(new Claim("AirlineId", user.AirlineId));
+            }
 
             claims.AddRange(roles.Select(r => new Claim(ClaimTypes.Role, r)));
 

@@ -90,7 +90,7 @@ namespace GHI_ASSET_CARGO.API.Controllers
         [Authorize]
         public async Task<ActionResult> GetCurrentLoggedInUser()
         {
-            var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+            var userId = User.FindFirstValue(ClaimTypes.NameIdentifier)!;
 
             var result = await _authService.GetCurrentLoggedInUser(userId);
 
