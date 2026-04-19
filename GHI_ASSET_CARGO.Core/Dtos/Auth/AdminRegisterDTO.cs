@@ -14,7 +14,7 @@ namespace GHI_ASSET_CARGO.Core.Dtos.Auth
         public string Email { get; set; } = default!;
         public string PhoneNumber { get; set; } = default!;
         public string? IdNumber { get; set; }
-        public string AirlineId { get; set; } = default!;
+        public string? AirlineId { get; set; }
         public string Password { get; set; } = default!;
     }
 }

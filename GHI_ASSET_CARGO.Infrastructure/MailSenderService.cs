@@ -42,6 +42,7 @@ public async Task<bool> SendByPostMarkAppAsync(string message, string to, string
             Bcc = bcc,
             MessageStream = "outbound",
             HtmlBody = message,
+            TextBody = string.Empty,
             Subject = subject
         };
 
@@ -88,6 +89,7 @@ public async Task<bool> SendByPostMarkAppAsync(string message, string to, string
                 To = to,
                 MessageStream = "outbound",
                 HtmlBody = message,
+                TextBody = string.Empty,
                 Subject = subject,
                 Attachments = new List<AttachmentDTO>
                 {

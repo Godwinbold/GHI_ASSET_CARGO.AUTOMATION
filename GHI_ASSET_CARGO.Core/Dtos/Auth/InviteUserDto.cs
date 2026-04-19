@@ -8,8 +8,7 @@ namespace GHI_ASSET_CARGO.Core.Dtos.Auth
         [EmailAddress]
         public string Email { get; set; } = default!;
 
-        [Required]
-        public string AirlineId { get; set; } = default!;
+        public string? AirlineId { get; set; }
 
         [Required]
         public string Role { get; set; } = default!;

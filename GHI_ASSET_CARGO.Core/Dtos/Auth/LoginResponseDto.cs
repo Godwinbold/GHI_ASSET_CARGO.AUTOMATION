@@ -10,7 +10,7 @@ namespace GHI_ASSET_CARGO.Core.Dtos.Auth
         public string? MiddleName { get; set; }
         public string Email { get; set; } = default!;
         public string PhoneNumber { get; set; } = default!;
-        public string AirlineId { get; set; } = default!;
+        public string? AirlineId { get; set; }
         public IEnumerable<string> Roles { get; set; } = Array.Empty<string>();
     }
 }
