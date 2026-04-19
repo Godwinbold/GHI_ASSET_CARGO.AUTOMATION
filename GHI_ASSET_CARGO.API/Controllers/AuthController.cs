@@ -3,8 +3,11 @@ using GHI_ASSET_CARGO.API.Extensions;
 using GHI_ASSET_CARGO.Core.Abstractions;
 using GHI_ASSET_CARGO.Core.Dtos;
 using GHI_ASSET_CARGO.Core.Dtos.Auth;
+using GHI_ASSET_CARGO.Domain.Constants;
 using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.EntityFrameworkCore;
 using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
 
@@ -15,15 +18,25 @@ namespace GHI_ASSET_CARGO.API.Controllers
     public class AuthController : ControllerBase
     {
         private readonly IAuthService _authService;
+        private readonly RoleManager<IdentityRole<Guid>> _roleManager;
 
-        public AuthController(IAuthService authService)
+        public AuthController(IAuthService authService, RoleManager<IdentityRole<Guid>> roleManager)
         {
             _authService = authService;
+            _roleManager = roleManager;
         }
 
-       
+        /// <summary>Get all available roles from the database.</summary>
+        [HttpGet("roles")]
+        [AllowAnonymous]
+        public async Task<IActionResult> GetRoles()
+        {
+            var roles = await _roleManager.Roles
+                .Select(r => r.Name)
+                .ToListAsync();
 
-        /// <summary>Register a user. When called from an airline portal, use the route with airlineId so the user is tied to that airline.</summary>
+            return Ok(ResponseDto<object>.Success(roles));
+        }
         [HttpPost("airlines/{airlineId}/register-user")]
         [AllowAnonymous]
         public async Task<IActionResult> Register(string airlineId, RegisterRequestDto request)
