@@ -27,7 +27,7 @@ namespace GHI_ASSET_CARGO.API.Controllers
         }
 
         /// <summary>Get all available roles from the database.</summary>
-        [HttpGet("roles")]
+        [HttpGet("get-all-roles")]
         [AllowAnonymous]
         public async Task<IActionResult> GetRoles()
         {
