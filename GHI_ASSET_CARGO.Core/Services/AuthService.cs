@@ -112,31 +112,6 @@ namespace GHI_ASSET_CARGO.Core.Services
                 if (!result.Succeeded)
                     return result.Errors.Select(error => new Error(error.Code, error.Description)).ToArray();
 
-                var confirmEmailUrl = _configuration["ConfirmEmailUrl"];
-                var token = await _userManager.GenerateEmailConfirmationTokenAsync(user);
-                var encodedEmail = HttpUtility.UrlEncode(user.Email);
-                var encodedToken = HttpUtility.UrlEncode(token);
-                var confirmationLink = $"{confirmEmailUrl}?email={encodedEmail}&token={encodedToken}";
-
-                var templateData = new Dictionary<string, string>
-                {
-                    ["firstName"] = user.FirstName,
-                    ["confirmationLink"] = confirmationLink
-                };
-
-                try
-                {
-                    var emailResult = await _notificationService.SendTemplateAsync(user.Email, "Confirm Email", "admin_confirmation_email.html", templateData);
-                    if (!emailResult)
-                    {
-                        _logger.LogInformation($">>>>>>Sending of Email to {registerAdminDto.Email} failed");
-                    }
-                }
-                catch(Exception ex)
-                {
-                    _logger.LogError($">>>>>>Sending of Email to {registerAdminDto.Email} failed, {ex.Message}");
-                }
-
                 return Result.Success();
             }
             catch (Exception ex)
@@ -178,39 +153,6 @@ namespace GHI_ASSET_CARGO.Core.Services
                 result = await _userManager.AddToRoleAsync(user, RolesConstant.Executive);
                 if (!result.Succeeded)
                     return result.Errors.Select(error => new Error(error.Code, error.Description)).ToArray();
-
-                var confirmEmailUrl = _configuration["ConfirmEmailUrl"];
-                var token = await _userManager.GenerateEmailConfirmationTokenAsync(user);
-                var encodedEmail = HttpUtility.UrlEncode(user.Email);
-                var encodedToken = HttpUtility.UrlEncode(token);
-                var confirmationLink = $"{confirmEmailUrl}?email={encodedEmail}&token={encodedToken}";
-
-                var organizationName = string.Empty;
-                if (Guid.TryParse(registerExecutiveDto.AirlineId, out var airlineId))
-                {
-                    var airline = await _repository.FindById<Airline>(airlineId);
-                    organizationName = airline?.AirlineName ?? string.Empty;
-                }
-
-                var templateData = new Dictionary<string, string>
-                {
-                    ["firstName"] = user.FirstName,
-                    ["organizationName"] = string.IsNullOrWhiteSpace(organizationName) ? "GHI Asset Cargo" : organizationName,
-                    ["confirmationLink"] = confirmationLink
-                };
-
-                try
-                {
-                    var emailResult = await _notificationService.SendTemplateAsync(user.Email, "Confirm Email", "executive_confirmation_email.html", templateData);
-                    if (!emailResult)
-                    {
-                        _logger.LogInformation($">>>>>>Sending of Email to {registerExecutiveDto.Email} failed");
-                    }
-                }
-                catch (Exception ex)
-                {
-                    _logger.LogError(ex.Message, ex);
-                }
 
                 return Result.Success();
             }
@@ -299,11 +241,11 @@ namespace GHI_ASSET_CARGO.Core.Services
                     invitationSent = false;
                 }
 
-                if (!invitationSent)
-                {
-                    await _userManager.DeleteAsync(user);
-                    return new Error[] { new("Invitation.Error", "Failed to send invitation email") };
-                }
+                // if (!invitationSent)
+                // {
+                //     await _userManager.DeleteAsync(user);
+                //     return new Error[] { new("Invitation.Error", "Failed to send invitation email") };
+                // }
 
                 return Result.Success();
             }
