@@ -4,6 +4,9 @@ using GHI_ASSET_CARGO.Core.Abstractions;
 using GHI_ASSET_CARGO.Core.Dtos;
 using GHI_ASSET_CARGO.Core.Dtos.Auth;
 using GHI_ASSET_CARGO.Domain.Constants;
+using GHI_ASSET_CARGO.Domain.Entities;
+using Microsoft.EntityFrameworkCore;
+using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
@@ -15,10 +18,12 @@ namespace GHI_ASSET_CARGO.API.Controllers
     public class AdminController : ControllerBase
     {
         private readonly IAuthService _authService;
+        private readonly IAdminService _adminService;
 
-        public AdminController(IAuthService authService)
+        public AdminController(IAuthService authService, IAdminService adminService)
         {
             _authService = authService;
+            _adminService = adminService;
         }
 
         [HttpPost("invite-user")]
@@ -53,6 +58,17 @@ namespace GHI_ASSET_CARGO.API.Controllers
                 return BadRequest(ResponseDto<object>.Failure(result.Errors));
 
             return Ok(ResponseDto<object>.Success("Invitation sent successfully"));
+        }
+
+        [HttpGet("get-app-users")]
+        [AllowAnonymous]
+        public async Task<IActionResult> GetUsers([FromQuery] int pageNumber = 1, [FromQuery] int pageSize = 20, [FromQuery] string? search = null)
+        {
+            var result = await _adminService.GetUsers(pageNumber, pageSize, search);
+            if (result.IsFailure)
+                return BadRequest(ResponseDto<object>.Failure(result.Errors));
+
+            return Ok(ResponseDto<object>.Success(result.Data));
         }
     }
 }

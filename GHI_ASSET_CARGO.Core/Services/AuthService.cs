@@ -241,11 +241,11 @@ namespace GHI_ASSET_CARGO.Core.Services
                     invitationSent = false;
                 }
 
-                // if (!invitationSent)
-                // {
-                //     await _userManager.DeleteAsync(user);
-                //     return new Error[] { new("Invitation.Error", "Failed to send invitation email") };
-                // }
+                if (!invitationSent)
+                {
+                    await _userManager.DeleteAsync(user);
+                    return new Error[] { new("Invitation.Error", "Failed to send invitation email") };
+                }
 
                 return Result.Success();
             }
@@ -307,7 +307,7 @@ namespace GHI_ASSET_CARGO.Core.Services
             }
         }
 
-        public async Task<Result<LoginResponseDto>> Login(LoginRequestDto loginUserDto, string airlineId)
+        public async Task<Result<LoginResponseDto>> Login(LoginRequestDto loginUserDto, string? airlineId)
         {
            
             var user = await _userManager.FindByEmailAsync(loginUserDto.Email);
@@ -320,9 +320,17 @@ namespace GHI_ASSET_CARGO.Core.Services
             if (!isValidUser)
                 return new Error[] { new("Auth.Error", "email or password not correct") };
 
-            if (!string.Equals(user.AirlineId, airlineId, StringComparison.OrdinalIgnoreCase))
-                return new Error[] { new("Auth.AirlineMismatch", "You do not have access to this airline portal. Please use your airline's login page.") };
+            if (!user.EmailConfirmed)
+                return new Error[] { new("Auth.EmailNotConfirmed", "Please confirm your email before logging in.") };
+
             var roles = await _userManager.GetRolesAsync(user);
+
+            if ((roles.Contains(RolesConstant.User) || !string.IsNullOrWhiteSpace(user.AirlineId)) )
+            {
+                if (string.IsNullOrWhiteSpace(airlineId) || !string.Equals(user.AirlineId, airlineId, StringComparison.OrdinalIgnoreCase))
+                    return new Error[] { new("Auth.AirlineMismatch", "You do not have access to this airline portal. Please use your airline's login page.") };
+            }
+
             var token = _jwtService.GenerateToken(user, roles);
 
             var response = new LoginResponseDto

@@ -49,10 +49,11 @@ namespace GHI_ASSET_CARGO.API.Controllers
         }
 
 
-        /// <summary>Login for a specific airline portal. User must belong to this airline (user.AirlineId == airlineId).</summary>
-        [HttpPost("airlines/{airlineId}/login")]
+        /// <summary>Login for a specific airline portal. User must belong to this airline (user.AirlineId == airlineId).
+        /// Passing no airlineId allows global login for Admin/Executive accounts.</summary>
+        [HttpPost("airlines/{airlineId?}/login")]
         [AllowAnonymous]
-        public async Task<IActionResult> LoginForAirline(string airlineId, [FromBody] LoginRequestDto loginRequestDto)
+        public async Task<IActionResult> LoginForAirline(string? airlineId, [FromBody] LoginRequestDto loginRequestDto)
         {
             var result = await _authService.Login(loginRequestDto, airlineId);
             if (result.IsFailure)

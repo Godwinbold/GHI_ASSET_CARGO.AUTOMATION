@@ -22,4 +22,8 @@
     <ProjectReference Include="..\GHI_ASSET_CARGO.Data\GHI_ASSET_CARGO.Data.csproj" />
   </ItemGroup>
 
+  <ItemGroup>
+    <Folder Include="Seeders\" />
+  </ItemGroup>
+
 </Project>

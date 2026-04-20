@@ -3,6 +3,7 @@ using GHI_ASSET_CARGO.API.Middlewares;
 using GHI_ASSET_CARGO.Core.Abstractions;
 using GHI_ASSET_CARGO.Data;
 using GHI_ASSET_CARGO.Infrastructure;
+using GHI_ASSET_CARGO.Domain.Entities;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
@@ -70,12 +71,14 @@ using (var scope = app.Services.CreateScope())
     var context = services.GetRequiredService<AppDbContext>();
     var unitOfWork = services.GetRequiredService<IUnitOfWork>();
     var roleManager = services.GetRequiredService<RoleManager<IdentityRole<Guid>>>();
+    var userManager = services.GetRequiredService<UserManager<AppUser>>();
+    var userSeederLogger = services.GetRequiredService<Microsoft.Extensions.Logging.ILoggerFactory>().CreateLogger("UserSeeder");
 
     // Apply migrations
     context.Database.Migrate();
 
     // Seed data
-    await DataSeeder.SeedAsync(context, unitOfWork, roleManager);
+    await DataSeeder.SeedAsync(context, unitOfWork, roleManager, userManager, userSeederLogger);
 }
 
 app.UseSwagger();
