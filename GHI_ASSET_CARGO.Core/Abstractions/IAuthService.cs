@@ -17,7 +17,7 @@ namespace GHI_ASSET_CARGO.Core.Abstractions
         Task<Result> RegisterExecutive(ExecutiveRegisterDTO registerExecutiveDto);
         Task<Result<LoginResponseDto>> Login(LoginRequestDto loginUserDtox, string? airlineId);
         Task<Result<LoginResponseDto>> GetCurrentLoggedInUser(string userId);
-        Task<Result> ForgotPassword(ResetPasswordDto resetPasswordDto);
+        Task<Result> ForgotPassword(ForgotPasswordDto forgotPasswordDto);
         Task<Result> ConfirmEmail(string email, string token);
         Task<Result> ChangePasswordAsync(ChangePasswordDto model);
         Task<Result> ResetPasswordAsync(ResetPasswordDto resetPasswordDto);

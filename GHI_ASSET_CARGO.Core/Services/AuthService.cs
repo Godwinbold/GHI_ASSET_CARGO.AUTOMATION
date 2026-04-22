@@ -399,9 +399,9 @@ namespace GHI_ASSET_CARGO.Core.Services
             return Result.Success();
         }
 
-        public async Task<Result> ForgotPassword(ResetPasswordDto resetPasswordDto)
+        public async Task<Result> ForgotPassword(ForgotPasswordDto forgotPasswordDto)
         {
-            var user = await _userManager.FindByEmailAsync(resetPasswordDto.Email);
+            var user = await _userManager.FindByEmailAsync(forgotPasswordDto.Email);
 
             if (user == null)
                 return new Error[] { new("Auth.Error", "No user found with the provided email") };
@@ -418,7 +418,7 @@ namespace GHI_ASSET_CARGO.Core.Services
                 ["resetLink"] = resetLink
             };
 
-            var isSuccessful = await _notificationService.SendTemplateAsync(resetPasswordDto.Email, emailSubject, "reset_password_email.html", templateData);
+            var isSuccessful = await _notificationService.SendTemplateAsync(forgotPasswordDto.Email, emailSubject, "reset_password_email.html", templateData);
             if (!isSuccessful)
                 return new Error[] { new("Auth.Error", "Error occured while sending reset password email") };
 

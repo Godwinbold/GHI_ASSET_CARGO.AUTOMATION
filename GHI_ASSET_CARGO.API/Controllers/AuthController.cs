@@ -132,9 +132,9 @@ namespace GHI_ASSET_CARGO.API.Controllers
 
 
         [HttpPost("forgot-password")]
-        public async Task<IActionResult> ForgotPassword([FromBody] ResetPasswordDto resetPasswordDto)
+        public async Task<IActionResult> ForgotPassword([FromBody] ForgotPasswordDto forgotPasswordDto)
         {
-            var result = await _authService.ForgotPassword(resetPasswordDto);
+            var result = await _authService.ForgotPassword(forgotPasswordDto);
 
             if (result.IsFailure)
                 return BadRequest(ResponseDto<object>.Failure(result.Errors));
