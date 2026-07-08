@@ -7,12 +7,23 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <PackageReference Include="MailKit" Version="4.15.1" />
+    <PackageReference Include="Microsoft.Extensions.DependencyInjection.Abstractions" Version="10.0.6" />
+    <PackageReference Include="Microsoft.Extensions.Http" Version="10.0.6" />
+    <PackageReference Include="MimeKit" Version="4.15.1" />
     <PackageReference Include="System.IdentityModel.Tokens.Jwt" Version="8.15.0" />
+    <PackageReference Include="CloudinaryDotNet" Version="1.24.1" />
+    <PackageReference Include="Microsoft.Extensions.Hosting.Abstractions" Version="8.0.0" />
+    <PackageReference Include="Microsoft.AspNetCore.Http.Abstractions" Version="2.3.0" />
   </ItemGroup>
 
   <ItemGroup>
     <ProjectReference Include="..\GHI_ASSET_CARGO.Core\GHI_ASSET_CARGO.Core.csproj" />
     <ProjectReference Include="..\GHI_ASSET_CARGO.Data\GHI_ASSET_CARGO.Data.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Folder Include="Seeders\" />
   </ItemGroup>
 
 </Project>

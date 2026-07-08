@@ -4,3 +4,22 @@ GET {{GHI_ASSET_CARGO.API_HostAddress}}/weatherforecast/
 Accept: application/json
 
 ###
+
+### Upload a document (multipart/form-data)
+# Note: do NOT include UploadedByUserId in the form — the API derives it from the JWT.
+POST {{GHI_ASSET_CARGO.API_HostAddress}}/api/airlines/:airlineId/shipments/:shipmentId/documents/upload-document
+Authorization: Bearer {{JWT_TOKEN}}
+Content-Type: multipart/form-data
+
+--boundary
+Content-Disposition: form-data; name="File"; filename="example.pdf"
+Content-Type: application/pdf
+
+< ./example.pdf
+--boundary--
+
+### Executive dashboard
+# Get executive dashboard (optionally filter by date range and airline). Requires EXECUTIVE role.
+GET {{GHI_ASSET_CARGO.API_HostAddress}}/api/executive/dashboard?startDate=2025-01-01T00:00:00Z&endDate=2025-07-01T23:59:59Z
+Authorization: Bearer {{JWT_TOKEN_WITH_EXECUTIVE_ROLE}}
+

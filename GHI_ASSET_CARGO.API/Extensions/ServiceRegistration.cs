@@ -1,7 +1,13 @@
-﻿using GHI_ASSET_CARGO.Core.Abstractions;
+using GHI_ASSET_CARGO.Core.Abstractions;
+using GHI_ASSET_CARGO.Core.Services;
+using GHI_ASSET_CARGO.Domain.Options;
 using GHI_ASSET_CARGO.Infrastructure;
 using GHI_ASSET_CARGO.Infrastructure.Repositories;
+using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.Extensions.Options;
+using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi.Models;
+using System.Text;
 
 namespace GHI_ASSET_CARGO.API.Extensions
 {
@@ -13,46 +19,32 @@ namespace GHI_ASSET_CARGO.API.Extensions
             {
                 options.AddSecurityDefinition("Bearer", new OpenApiSecurityScheme
                 {
-                    Description = "Fast api",
+                    Description = "Enter: Bearer {your JWT token}",
                     Name = "Authorization",
                     Type = SecuritySchemeType.ApiKey,
                     BearerFormat = "JWT",
                     In = ParameterLocation.Header,
-                    Scheme = "Bearer"
+                    Scheme = "bearer"
                 });
                 options.AddSecurityRequirement(new OpenApiSecurityRequirement
-            {
                 {
-                    new OpenApiSecurityScheme
                     {
-                        Reference = new OpenApiReference
+                        new OpenApiSecurityScheme
                         {
-                            Type = ReferenceType.SecurityScheme,
-                            Id = "Bearer"
-                        }
-                    },
-                    new string[] { }
-                }
-            });
+                            Reference = new OpenApiReference
+                            {
+                                Type = ReferenceType.SecurityScheme,
+                                Id = "Bearer"
+                            }
+                        },
+                        Array.Empty<string>()
+                    }
+                });
             });
 
-            services.AddAuthentication(options =>
-            {
-                options.DefaultAuthenticateScheme = JwtBearerDefaults.AuthenticationScheme;
-                options.DefaultScheme = JwtBearerDefaults.AuthenticationScheme;
-                options.DefaultChallengeScheme = JwtBearerDefaults.AuthenticationScheme;
-            }).AddJwtBearer(options =>
-            {
-                var key = Encoding.UTF8.GetBytes(configuration.GetSection("JWT:Key").Value);
-                options.TokenValidationParameters = new TokenValidationParameters
-                {
-                    ValidateIssuerSigningKey = false,
-                    IssuerSigningKey = new SymmetricSecurityKey(key),
-                    ValidateLifetime = false,
-                    ValidateAudience = false,
-                    ValidateIssuer = false
-                };
-            });
+
+           
+            //});
 
             services.AddCors(options =>
             {
@@ -65,10 +57,21 @@ namespace GHI_ASSET_CARGO.API.Extensions
                     });
             });
 
+            services.Configure<PostMarkOptions>(configuration.GetSection(PostMarkOptions.SectionName))
+            .AddSingleton(x => x.GetRequiredService<IOptions<PostMarkOptions>>().Value);
+
             services.AddScoped<IJwtService, JwtService>();
             services.AddScoped<IUnitOfWork, UnitOfWork>();
             services.AddScoped<IRepository, Repository>();
-            
+            services.AddScoped<IAuthService, AuthService>();
+            services.AddScoped<IAdminService, AdminService>();
+            services.AddScoped<INotificationService, NotificationService>();
+            services.AddScoped<ICloudinaryService, CloudinaryService>();
+            services.AddScoped<IShipmentService, ShipmentService>();
+            services.AddScoped<IDocumentService, DocumentService>();
+            services.AddScoped<IFinancialService, FinancialService>();
+            services.AddScoped<IExecutiveService, ExecutiveService>();
+            services.AddScoped<IMailSenderService, MailSenderService>();
         }
     }
 }
