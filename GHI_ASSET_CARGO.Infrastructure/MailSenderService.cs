@@ -85,7 +85,7 @@ public async Task<bool> SendByPostMarkAppAsync(string message, string to, string
         {
             var model = new PostMarkAppSenderDTO
             {
-                From = "info@codebasehackers.com",
+                From = "godwin.ozioko@ghiassets.com",
                 To = to,
                 MessageStream = "outbound",
                 HtmlBody = message,
