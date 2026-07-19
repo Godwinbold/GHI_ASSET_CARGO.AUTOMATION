@@ -10,9 +10,9 @@ namespace GHI_ASSET_CARGO.Core.Abstractions
         Task<Result<PagedResultDto<ShipmentResponseDto>>> GetShipmentsForAirlineFilteredAsync(string airlineId, Guid? userId = null, string? awb = null, DateTimeOffset? startDate = null, DateTimeOffset? endDate = null, ShipmentStatus? status = null, int page = 1, int pageSize = 10);
         Task<Result<ShipmentResponseDto>> GetShipmentByIdAsync(string shipmentId, string airlineId);
         Task<Result<ShipmentResponseDto>> GetShipmentByAwbAsync(string airwayBillNumber, string airlineId);
-        Task<Result<ShipmentResponseDto>> CreateShipmentAsync(string airlineId, CreateShipmentRequestDto dto);
-        Task<Result> AddNoteAsync(string shipmentId, string airlineId, AddNoteRequestDto dto);
-        Task<Result> DeleteShipmentAsync(string shipmentId, string airlineId);
+        Task<Result<ShipmentResponseDto>> CreateShipmentAsync(string airlineId, CreateShipmentRequestDto dto, string? userId = null, string? userEmail = null, string? userName = null, string? ipAddress = null);
+        Task<Result> AddNoteAsync(string shipmentId, string airlineId, AddNoteRequestDto dto, string? userId = null, string? userEmail = null, string? userName = null, string? ipAddress = null);
+        Task<Result> DeleteShipmentAsync(string shipmentId, string airlineId, string? userId = null, string? userEmail = null, string? userName = null, string? ipAddress = null);
         Task<Result<PagedResultDto<ShipmentResponseDto>>> GetShipmentsByStatusAsync(string airlineId, ShipmentStatus status, int page = 1, int pageSize = 10);
     }
 }

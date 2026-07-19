@@ -14,5 +14,6 @@ namespace GHI_ASSET_CARGO.Domain.Entities
         public Guid UploadedByUserId { get; set; }
         public Guid ShipmentId { get; set; }
         public Shipment Shipment { get; set; }
+        public bool IsDeleted { get; set; } = false;
     }
 }

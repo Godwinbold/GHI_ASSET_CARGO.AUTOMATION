@@ -13,5 +13,6 @@ namespace GHI_ASSET_CARGO.Domain.Entities
         public DateTimeOffset CreatedDate { get; set; }
         public DateTimeOffset UpdatedDate { get; set; }
         public string? AirlineId { get; set; }
+        public bool IsDeleted { get; set; } = false;
     }
 }

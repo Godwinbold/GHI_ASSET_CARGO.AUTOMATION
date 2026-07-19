@@ -13,6 +13,7 @@ namespace GHI_ASSET_CARGO.Domain.Entities
 
         public Guid ShipmentId { get; set; }
         public Shipment Shipment { get; set; } = null!;
+        public bool IsDeleted { get; set; } = false;
 
         public string MAWB { get; set; } = null!;
 

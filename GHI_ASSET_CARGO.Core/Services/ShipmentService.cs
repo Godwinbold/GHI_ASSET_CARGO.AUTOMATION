@@ -1,6 +1,7 @@
 using GHI_ASSET_CARGO.Core.Abstractions;
 using GHI_ASSET_CARGO.Core.Dtos;
 using GHI_ASSET_CARGO.Core.Dtos.Shipment;
+using GHI_ASSET_CARGO.Core.Utilities;
 using GHI_ASSET_CARGO.Domain.Entities;
 using GHI_ASSET_CARGO.Domain.Enums;
 using Microsoft.EntityFrameworkCore;
@@ -11,16 +12,19 @@ namespace GHI_ASSET_CARGO.Core.Services
     {
         private readonly IRepository _repository;
         private readonly IUnitOfWork _unitOfWork;
+        private readonly IAuditService _auditService;
 
-        public ShipmentService(IRepository repository, IUnitOfWork unitOfWork)
+        public ShipmentService(IRepository repository, IUnitOfWork unitOfWork, IAuditService auditService)
         {
             _repository = repository;
             _unitOfWork = unitOfWork;
+            _auditService = auditService;
         }
 
         public async Task<Result<PagedResultDto<ShipmentResponseDto>>> GetShipmentsForAirlineAsync(string airlineId, int page, int pageSize, string? awbSearch = null)
         {
-            var query = _repository.GetAll<Shipment>().Where(s => s.AirlineId.ToString() == airlineId);
+            var query = _repository.GetAll<Shipment>()
+                .Where(s => s.AirlineId.ToString() == airlineId && !s.IsDeleted);
 
             if (!string.IsNullOrWhiteSpace(awbSearch))
                 query = query.Where(s => s.AirwayBillNumber.Contains(awbSearch));
@@ -37,7 +41,7 @@ namespace GHI_ASSET_CARGO.Core.Services
             foreach (var s in shipments)
             {
                 var notes = await _repository.GetAll<ShipmentNote>()
-                    .Where(n => n.ShipmentId == s.Id)
+                    .Where(n => n.ShipmentId == s.Id && !n.IsDeleted)
                     .OrderByDescending(n => n.CreatedDate)
                     .ToListAsync();
                 items.Add(MapToResponse(s, notes));
@@ -57,7 +61,7 @@ namespace GHI_ASSET_CARGO.Core.Services
         public async Task<Result<PagedResultDto<ShipmentResponseDto>>> GetShipmentsByStatusAsync(string airlineId, ShipmentStatus status, int page = 1, int pageSize = 10)
         {
             var query = _repository.GetAll<Shipment>()
-                .Where(s => s.AirlineId.ToString() == airlineId && s.Status == status);
+                .Where(s => s.AirlineId.ToString() == airlineId && s.Status == status && !s.IsDeleted);
 
             var totalCount = await query.CountAsync();
 
@@ -71,7 +75,7 @@ namespace GHI_ASSET_CARGO.Core.Services
             foreach (var s in shipments)
             {
                 var notes = await _repository.GetAll<ShipmentNote>()
-                    .Where(n => n.ShipmentId == s.Id)
+                    .Where(n => n.ShipmentId == s.Id && !n.IsDeleted)
                     .OrderByDescending(n => n.CreatedDate)
                     .ToListAsync();
                 items.Add(MapToResponse(s, notes));
@@ -94,7 +98,7 @@ namespace GHI_ASSET_CARGO.Core.Services
             var start = startDate ?? DateTimeOffset.UtcNow.AddMonths(-1);
             var end = endDate ?? DateTimeOffset.UtcNow;
 
-            var query = _repository.GetAll<Shipment>().Where(s => s.AirlineId.ToString() == airlineId);
+            var query = _repository.GetAll<Shipment>().Where(s => s.AirlineId.ToString() == airlineId && !s.IsDeleted);
 
             if (!string.IsNullOrWhiteSpace(awb))
                 query = query.Where(s => s.AirwayBillNumber.Contains(awb));
@@ -147,14 +151,14 @@ namespace GHI_ASSET_CARGO.Core.Services
         public async Task<Result<ShipmentResponseDto>> GetShipmentByIdAsync(string shipmentId, string airlineId)
         {
             var shipment = await _repository.FindById<Shipment>(Guid.Parse(shipmentId));
-            if (shipment == null)
+            if (shipment == null || shipment.IsDeleted)
                 return new Error[] { new("Shipment.NotFound", "Shipment not found.") };
 
             if (!string.Equals(shipment.AirlineId.ToString(), airlineId, StringComparison.OrdinalIgnoreCase))
                 return new Error[] { new("Shipment.Forbidden", "You do not have access to this shipment.") };
 
             var notes = await _repository.GetAll<ShipmentNote>()
-                .Where(n => n.ShipmentId.ToString() == shipmentId)
+                .Where(n => n.ShipmentId.ToString() == shipmentId && !n.IsDeleted)
                 .OrderByDescending(n => n.CreatedDate)
                 .ToListAsync();
 
@@ -164,21 +168,20 @@ namespace GHI_ASSET_CARGO.Core.Services
         public async Task<Result<ShipmentResponseDto>> GetShipmentByAwbAsync(string airwayBillNumber, string airlineId)
         {
             var shipment = await _repository.GetAll<Shipment>()
-                .Where(s => s.AirlineId.ToString() == airlineId && s.AirwayBillNumber == airwayBillNumber)
-                .FirstOrDefaultAsync();
+                .FirstOrDefaultAsync(s => s.AirlineId.ToString() == airlineId && s.AirwayBillNumber == airwayBillNumber && !s.IsDeleted);
 
             if (shipment == null)
                 return new Error[] { new("Shipment.NotFound", "No tracking information available for the provided ID. Please ensure the tracking ID is correct or contact support for assistance.") };
 
             var notes = await _repository.GetAll<ShipmentNote>()
-                .Where(n => n.ShipmentId == shipment.Id)
+                .Where(n => n.ShipmentId == shipment.Id && !n.IsDeleted)
                 .OrderByDescending(n => n.CreatedDate)
                 .ToListAsync();
 
             return Result<ShipmentResponseDto>.Success(MapToResponse(shipment, notes));
         }
 
-        public async Task<Result<ShipmentResponseDto>> CreateShipmentAsync(string airlineId, CreateShipmentRequestDto dto)
+        public async Task<Result<ShipmentResponseDto>> CreateShipmentAsync(string airlineId, CreateShipmentRequestDto dto, string? userId = null, string? userEmail = null, string? userName = null, string? ipAddress = null)
         {
             var exists = await _repository.GetAll<Shipment>()
                 .AnyAsync(s => s.AirlineId.ToString() == airlineId && s.AirwayBillNumber == dto.AirwayBillNumber);
@@ -192,16 +195,32 @@ namespace GHI_ASSET_CARGO.Core.Services
                 Status = dto.Status,
                 ShipmentDate = dto.ShipmentDate,
                 CreatedDate = DateTimeOffset.UtcNow,
-                UpdatedDate = DateTimeOffset.UtcNow
+                UpdatedDate = DateTimeOffset.UtcNow,
+                LastUpdatedBy = string.IsNullOrEmpty(userId) ? null : Guid.Parse(userId)
             };
 
             await _repository.Add(shipment);
             await _unitOfWork.SaveChangesAsync();
 
+            // Audit logging (fire and forget - don't break main operation if audit fails)
+            if (!string.IsNullOrEmpty(userId))
+            {
+                _ = _auditService.LogAuditAsync(
+                    userId: Guid.Parse(userId),
+                    userName: userName ?? "Unknown",
+                    userEmail: userEmail ?? "unknown@email.com",
+                    action: "Create",
+                    entityName: nameof(Shipment),
+                    entityId: shipment.Id,
+                    changes: $"Shipment created: AWB {shipment.AirwayBillNumber}, Status: {shipment.Status}",
+                    ipAddress: ipAddress ?? ""
+                ).ConfigureAwait(false);
+            }
+
             return Result<ShipmentResponseDto>.Success(MapToResponse(shipment, new List<ShipmentNote>()));
         }
 
-        public async Task<Result> AddNoteAsync(string shipmentId, string airlineId, AddNoteRequestDto dto)
+        public async Task<Result> AddNoteAsync(string shipmentId, string airlineId, AddNoteRequestDto dto, string? userId = null, string? userEmail = null, string? userName = null, string? ipAddress = null)
         {
             var shipment = await _repository.FindById<Shipment>(Guid.Parse(shipmentId));
             if (shipment == null)
@@ -215,16 +234,32 @@ namespace GHI_ASSET_CARGO.Core.Services
                 ShipmentId = Guid.Parse(shipmentId),
                 Content = dto.Content,
                 CreatedDate = DateTimeOffset.UtcNow,
-                UpdatedDate = DateTimeOffset.UtcNow
+                UpdatedDate = DateTimeOffset.UtcNow,
+                LastUpdatedBy = string.IsNullOrEmpty(userId) ? null : Guid.Parse(userId)
             };
 
             await _repository.Add(note);
             await _unitOfWork.SaveChangesAsync();
 
+            // Audit logging (fire and forget - don't break main operation if audit fails)
+            if (!string.IsNullOrEmpty(userId))
+            {
+                _ = _auditService.LogAuditAsync(
+                    userId: Guid.Parse(userId),
+                    userName: userName ?? "Unknown",
+                    userEmail: userEmail ?? "unknown@email.com",
+                    action: "Create",
+                    entityName: nameof(ShipmentNote),
+                    entityId: note.Id,
+                    changes: $"Note added to shipment {shipment.AirwayBillNumber}",
+                    ipAddress: ipAddress ?? ""
+                ).ConfigureAwait(false);
+            }
+
             return Result.Success();
         }
 
-        public async Task<Result> DeleteShipmentAsync(string shipmentId, string airlineId)
+        public async Task<Result> DeleteShipmentAsync(string shipmentId, string airlineId, string? userId = null, string? userEmail = null, string? userName = null, string? ipAddress = null)
         {
             var shipment = await _repository.FindById<Shipment>(Guid.Parse(shipmentId));
             if (shipment == null)
@@ -233,8 +268,37 @@ namespace GHI_ASSET_CARGO.Core.Services
             if (!string.Equals(shipment.AirlineId.ToString(), airlineId, StringComparison.OrdinalIgnoreCase))
                 return new Error[] { new("Shipment.Forbidden", "You do not have access to this shipment.") };
 
-            _repository.Remove(shipment);
+            var shipmentData = $"AWB: {shipment.AirwayBillNumber}, Status: {shipment.Status}";
+            
+            // Soft delete: record deleted entity and mark as deleted
+            var deletedEntity = SoftDeleteHelper.CreateDeletedEntity(
+                shipment,
+                string.IsNullOrEmpty(userId) ? null : Guid.Parse(userId),
+                userEmail,
+                userName,
+                ipAddress
+            );
+            await _repository.Add(deletedEntity);
+
+            // Mark as deleted instead of removing
+            shipment.IsDeleted = true;
+            _repository.Update(shipment);
             await _unitOfWork.SaveChangesAsync();
+
+            // Audit logging (fire and forget - don't break main operation if audit fails)
+            if (!string.IsNullOrEmpty(userId))
+            {
+                _ = _auditService.LogAuditAsync(
+                    userId: Guid.Parse(userId),
+                    userName: userName ?? "Unknown",
+                    userEmail: userEmail ?? "unknown@email.com",
+                    action: "Delete",
+                    entityName: nameof(Shipment),
+                    entityId: shipment.Id,
+                    changes: $"Shipment deleted: {shipmentData}",
+                    ipAddress: ipAddress ?? ""
+                ).ConfigureAwait(false);
+            }
 
             return Result.Success();
         }

@@ -2,11 +2,9 @@ using GHI_ASSET_CARGO.API.Dtos;
 using GHI_ASSET_CARGO.API.Extensions;
 using GHI_ASSET_CARGO.Core.Abstractions;
 using GHI_ASSET_CARGO.Core.Dtos;
+using GHI_ASSET_CARGO.Core.Dtos.AuditLog;
 using GHI_ASSET_CARGO.Core.Dtos.Auth;
 using GHI_ASSET_CARGO.Domain.Constants;
-using GHI_ASSET_CARGO.Domain.Entities;
-using Microsoft.EntityFrameworkCore;
-using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
@@ -19,11 +17,13 @@ namespace GHI_ASSET_CARGO.API.Controllers
     {
         private readonly IAuthService _authService;
         private readonly IAdminService _adminService;
+        private readonly IAuditService _auditService;
 
-        public AdminController(IAuthService authService, IAdminService adminService)
+        public AdminController(IAuthService authService, IAdminService adminService, IAuditService auditService)
         {
             _authService = authService;
             _adminService = adminService;
+            _auditService = auditService;
         }
 
         [HttpPost("invite-user")]
@@ -53,7 +53,10 @@ namespace GHI_ASSET_CARGO.API.Controllers
                 return Forbid();
             }
 
-            var result = await _authService.InviteUser(inviteUserDto);
+            var (userId, email, fullName) = User.GetAuditUserInfo();
+            var ipAddress = HttpContext.GetClientIpAddress();
+
+            var result = await _authService.InviteUser(inviteUserDto, userId, email, fullName, ipAddress);
             if (result.IsFailure)
                 return BadRequest(ResponseDto<object>.Failure(result.Errors));
 
@@ -70,5 +73,47 @@ namespace GHI_ASSET_CARGO.API.Controllers
 
             return Ok(ResponseDto<object>.Success(result.Data));
         }
+
+        [HttpGet("audit-logs")]
+        public async Task<IActionResult> GetAuditLogs(
+            [FromQuery] Guid? userId = null,
+            [FromQuery] string? action = null,
+            [FromQuery] string? entityName = null,
+            [FromQuery] DateTimeOffset? fromDate = null,
+            [FromQuery] DateTimeOffset? toDate = null,
+            [FromQuery] int page = 1,
+            [FromQuery] int pageSize = 20)
+        {
+            var filter = new AuditLogFilterDto
+            {
+                UserId = userId,
+                Action = action,
+                EntityName = entityName,
+                FromDate = fromDate,
+                ToDate = toDate,
+                Page = page,
+                PageSize = pageSize
+            };
+
+            var result = await _auditService.GetAuditLogsAsync(filter);
+            if (result.IsFailure)
+                return BadRequest(ResponseDto<object>.Failure(result.Errors));
+
+            return Ok(ResponseDto<object>.Success(result.Data));
+        }
+
+        [HttpDelete("delete-user/{userId}")]
+        public async Task<IActionResult> DeleteUser(string userId)
+        {
+            var (adminUserId, adminEmail, adminName) = User.GetAuditUserInfo();
+            var ipAddress = HttpContext.GetClientIpAddress();
+
+            var result = await _adminService.DeleteUserAsync(userId, adminUserId, adminEmail, adminName, ipAddress);
+            if (result.IsFailure)
+                return BadRequest(ResponseDto<object>.Failure(result.Errors));
+
+            return Ok(ResponseDto<object>.Success(result.Data));
+        }
     }
 }
+

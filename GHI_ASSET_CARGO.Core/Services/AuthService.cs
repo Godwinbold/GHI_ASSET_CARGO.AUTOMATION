@@ -1,6 +1,7 @@
 using GHI_ASSET_CARGO.Core.Abstractions;
 using GHI_ASSET_CARGO.Core.Dtos;
 using GHI_ASSET_CARGO.Core.Dtos.Auth;
+using GHI_ASSET_CARGO.Core.Utilities;
 using GHI_ASSET_CARGO.Domain.Constants;
 using GHI_ASSET_CARGO.Domain.Entities;
 using Microsoft.AspNetCore.Identity;
@@ -26,9 +27,10 @@ namespace GHI_ASSET_CARGO.Core.Services
         private readonly IUnitOfWork _unitOfWork;
         private readonly INotificationService _notificationService;
         private readonly ILogger<AuthService> _logger;
+        private readonly IAuditService _auditService;
 
         public AuthService(UserManager<AppUser> userManager, IRepository repository, IJwtService jwtService,
-            IConfiguration configuration, IUnitOfWork unitOfWork, INotificationService notificationService, ILogger<AuthService> logger)
+            IConfiguration configuration, IUnitOfWork unitOfWork, INotificationService notificationService, ILogger<AuthService> logger, IAuditService auditService)
         {
             _userManager = userManager;
             _repository = repository;
@@ -37,6 +39,7 @@ namespace GHI_ASSET_CARGO.Core.Services
             _unitOfWork = unitOfWork;
             _notificationService = notificationService;
             _logger = logger;
+            _auditService = auditService;
         }
 
         public async Task<Result<string>> RegisterUser(RegisterRequestDto registerUserDto, string airlineId)
@@ -163,7 +166,7 @@ namespace GHI_ASSET_CARGO.Core.Services
             }
         }
 
-        public async Task<Result> InviteUser(InviteUserDto inviteUserDto)
+        public async Task<Result> InviteUser(InviteUserDto inviteUserDto, string? invitedByUserId = null, string? invitedByEmail = null, string? invitedByName = null, string? ipAddress = null)
         {
             try
             {
@@ -245,6 +248,21 @@ namespace GHI_ASSET_CARGO.Core.Services
                 {
                     await _userManager.DeleteAsync(user);
                     return new Error[] { new("Invitation.Error", "Failed to send invitation email") };
+                }
+
+                // Audit logging
+                if (!string.IsNullOrEmpty(invitedByUserId))
+                {
+                    _ = _auditService.LogAuditAsync(
+                        userId: Guid.Parse(invitedByUserId),
+                        userName: invitedByName ?? "Unknown",
+                        userEmail: invitedByEmail ?? "unknown@email.com",
+                        action: "Create",
+                        entityName: nameof(AppUser),
+                        entityId: user.Id,
+                        changes: $"User invited: {user.Email}, Role: {normalizedRole}, Airline: {airline?.AirlineName ?? "N/A"}",
+                        ipAddress: ipAddress ?? ""
+                    ).ConfigureAwait(false);
                 }
 
                 return Result.Success();

@@ -1,4 +1,5 @@
 using GHI_ASSET_CARGO.API.Dtos;
+using GHI_ASSET_CARGO.API.Extensions;
 using GHI_ASSET_CARGO.Core.Abstractions;
 using GHI_ASSET_CARGO.Core.Dtos;
 using GHI_ASSET_CARGO.Core.Dtos.Financial;
@@ -78,7 +79,10 @@ namespace GHI_ASSET_CARGO.API.Controllers
             var forbidden = EnsureUserCanAccessAirline(airlineId);
             if (forbidden != null) return forbidden;
 
-            var result = await _financialService.CreateFinancialAsync(shipmentId, airlineId, dto);
+            var (userId, email, fullName) = User.GetAuditUserInfo();
+            var ipAddress = HttpContext.GetClientIpAddress();
+
+            var result = await _financialService.CreateFinancialAsync(shipmentId, airlineId, dto, userId, email, fullName, ipAddress);
             if (result.IsFailure)
                 return BadRequest(ResponseDto<object>.Failure(result.Errors));
 
@@ -95,7 +99,10 @@ namespace GHI_ASSET_CARGO.API.Controllers
             if (dto.Id != financialId)
                 return BadRequest(ResponseDto<object>.Failure(new[] { new Error("Financial.IdMismatch", "Financial ID in URL does not match the ID in the request body.") }));
 
-            var result = await _financialService.UpdateFinancialAsync(financialId, airlineId, dto);
+            var (userId, email, fullName) = User.GetAuditUserInfo();
+            var ipAddress = HttpContext.GetClientIpAddress();
+
+            var result = await _financialService.UpdateFinancialAsync(financialId, airlineId, dto, userId, email, fullName, ipAddress);
             if (result.IsFailure)
                 return BadRequest(ResponseDto<object>.Failure(result.Errors));
 
@@ -109,7 +116,10 @@ namespace GHI_ASSET_CARGO.API.Controllers
             var forbidden = EnsureUserCanAccessAirline(airlineId);
             if (forbidden != null) return forbidden;
 
-            var result = await _financialService.DeleteFinancialAsync(financialId, airlineId);
+            var (userId, email, fullName) = User.GetAuditUserInfo();
+            var ipAddress = HttpContext.GetClientIpAddress();
+
+            var result = await _financialService.DeleteFinancialAsync(financialId, airlineId, userId, email, fullName, ipAddress);
             if (result.IsFailure)
                 return NotFound(ResponseDto<object>.Failure(result.Errors, 404));
 

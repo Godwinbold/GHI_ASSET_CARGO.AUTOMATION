@@ -72,6 +72,7 @@ namespace GHI_ASSET_CARGO.API.Extensions
             services.AddScoped<IFinancialService, FinancialService>();
             services.AddScoped<IExecutiveService, ExecutiveService>();
             services.AddScoped<IMailSenderService, MailSenderService>();
+            services.AddScoped<IAuditService, AuditService>();
         }
     }
 }

@@ -1,4 +1,5 @@
 using GHI_ASSET_CARGO.API.Dtos;
+using GHI_ASSET_CARGO.API.Extensions;
 using GHI_ASSET_CARGO.Core.Abstractions;
 using GHI_ASSET_CARGO.Core.Dtos;
 using GHI_ASSET_CARGO.Core.Dtos.Shipment;
@@ -135,7 +136,10 @@ namespace GHI_ASSET_CARGO.API.Controllers
             var forbidden = EnsureUserCanAccessAirline(airlineId);
             if (forbidden != null) return forbidden;
 
-            var result = await _shipmentService.CreateShipmentAsync(airlineId, dto);
+            var (userId, email, fullName) = User.GetAuditUserInfo();
+            var ipAddress = HttpContext.GetClientIpAddress();
+
+            var result = await _shipmentService.CreateShipmentAsync(airlineId, dto, userId, email, fullName, ipAddress);
             if (result.IsFailure)
                 return BadRequest(ResponseDto<object>.Failure(result.Errors));
 
@@ -149,7 +153,10 @@ namespace GHI_ASSET_CARGO.API.Controllers
             var forbidden = EnsureUserCanAccessAirline(airlineId);
             if (forbidden != null) return forbidden;
 
-            var result = await _shipmentService.AddNoteAsync(id, airlineId, dto);
+            var (userId, email, fullName) = User.GetAuditUserInfo();
+            var ipAddress = HttpContext.GetClientIpAddress();
+
+            var result = await _shipmentService.AddNoteAsync(id, airlineId, dto, userId, email, fullName, ipAddress);
             if (result.IsFailure)
                 return NotFound(ResponseDto<object>.Failure(result.Errors, 404));
 
@@ -163,7 +170,10 @@ namespace GHI_ASSET_CARGO.API.Controllers
             var forbidden = EnsureUserCanAccessAirline(airlineId);
             if (forbidden != null) return forbidden;
 
-            var result = await _shipmentService.DeleteShipmentAsync(id, airlineId);
+            var (userId, email, fullName) = User.GetAuditUserInfo();
+            var ipAddress = HttpContext.GetClientIpAddress();
+
+            var result = await _shipmentService.DeleteShipmentAsync(id, airlineId, userId, email, fullName, ipAddress);
             if (result.IsFailure)
                 return NotFound(ResponseDto<object>.Failure(result.Errors, 404));
 

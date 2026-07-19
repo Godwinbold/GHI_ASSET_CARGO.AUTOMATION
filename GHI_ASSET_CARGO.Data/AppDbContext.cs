@@ -16,6 +16,8 @@ namespace GHI_ASSET_CARGO.Data
         public DbSet<ShipmentNote> ShipmentNotes { get; set; }
         public DbSet<Financial> Financials { get; set; }
         public DbSet<ShipmentDocument> ShipmentDocuments { get; set; }
+        public DbSet<AuditLog> AuditLogs { get; set; }
+        public DbSet<DeletedEntity> DeletedEntities { get; set; }
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {

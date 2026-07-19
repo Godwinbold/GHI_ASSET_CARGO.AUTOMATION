@@ -1,4 +1,5 @@
 using GHI_ASSET_CARGO.API.Dtos;
+using GHI_ASSET_CARGO.API.Extensions;
 using GHI_ASSET_CARGO.Core.Abstractions;
 using GHI_ASSET_CARGO.Core.Dtos;
 using GHI_ASSET_CARGO.Core.Dtos.Document;
@@ -99,7 +100,7 @@ namespace GHI_ASSET_CARGO.API.Controllers
             var forbidden = EnsureUserCanAccessAirline(airlineId);
             if (forbidden != null) return forbidden;
 
-             if (!TryGetLoggedInUserId(out var uploaderId))
+            if (!TryGetLoggedInUserId(out var uploaderId))
                 return StatusCode(403, ResponseDto<object>.Failure(new[] { new Error("Auth.UserRequired", "Unable to determine the logged-in user.") }, 403));
 
             var file = dto.File;
@@ -131,7 +132,10 @@ namespace GHI_ASSET_CARGO.API.Controllers
                 UploadedByUserId = uploaderId
             };
 
-            var result = await _documentService.UploadDocumentAsync(shipmentId, airlineId, createDto);
+            var (userId, email, fullName) = User.GetAuditUserInfo();
+            var ipAddress = HttpContext.GetClientIpAddress();
+
+            var result = await _documentService.UploadDocumentAsync(shipmentId, airlineId, createDto, userId, email, fullName, ipAddress);
             if (result.IsFailure)
                 return BadRequest(ResponseDto<object>.Failure(result.Errors));
 
@@ -147,7 +151,10 @@ namespace GHI_ASSET_CARGO.API.Controllers
             if (dto.Id != id)
                 return BadRequest(ResponseDto<object>.Failure(new[] { new Error("Document.IdMismatch", "Document ID in URL does not match request body.") }));
 
-            var result = await _documentService.UpdateDocumentAsync(id, airlineId, dto);
+            var (userId, email, fullName) = User.GetAuditUserInfo();
+            var ipAddress = HttpContext.GetClientIpAddress();
+
+            var result = await _documentService.UpdateDocumentAsync(id, airlineId, dto, userId, email, fullName, ipAddress);
             if (result.IsFailure)
                 return BadRequest(ResponseDto<object>.Failure(result.Errors));
 
@@ -160,7 +167,10 @@ namespace GHI_ASSET_CARGO.API.Controllers
             var forbidden = EnsureUserCanAccessAirline(airlineId);
             if (forbidden != null) return forbidden;
 
-            var result = await _documentService.DeleteDocumentAsync(id, airlineId);
+            var (userId, email, fullName) = User.GetAuditUserInfo();
+            var ipAddress = HttpContext.GetClientIpAddress();
+
+            var result = await _documentService.DeleteDocumentAsync(id, airlineId, userId, email, fullName, ipAddress);
             if (result.IsFailure)
                 return NotFound(ResponseDto<object>.Failure(result.Errors, 404));
 
