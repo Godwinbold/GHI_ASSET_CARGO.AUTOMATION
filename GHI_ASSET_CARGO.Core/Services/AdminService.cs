@@ -104,7 +104,7 @@ namespace GHI_ASSET_CARGO.Core.Services
                 DeletedByName = adminName ?? "Unknown",
                 DeletedDate = DateTimeOffset.UtcNow,
                 IpAddress = ipAddress ?? "",
-                DeletionReason = null
+                DeletionReason = "not specified"
             };
             await _repository.Add(deletedEntity);
 
